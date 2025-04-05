@@ -1,9 +1,0 @@
-from pydantic import BaseModel, EmailStr
-from uuid import UUID
-
-class RegisterInput(BaseModel):
-    email: EmailStr
-    password: str
-    user_id: UUID
-
-   

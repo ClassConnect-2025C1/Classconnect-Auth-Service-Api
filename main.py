@@ -1,13 +1,13 @@
-from flask import Flask
-from controller.service_controller import bp
+from fastapi import FastAPI
+from routes.auth import router as auth_router
+from dbConfig.base import Base
+from dbConfig.session import engine
 
-app = Flask(__name__)
-app.register_blueprint(bp)
+Base.metadata.create_all(bind=engine)
 
-if __name__ == "__main__":
-    port = 8080
-    print(f"Servidor escuchando en el puerto {port}")
-    try:
-        app.run(host='0.0.0.0', port=port)
-    except Exception as e:
-        print(f"Error al iniciar el servidor: {e}")
+app = FastAPI()
+app.include_router(auth_router)
+
+@app.get("/")
+def root():
+    return {"message": "Servidor FastAPI funcionando 🚀"}

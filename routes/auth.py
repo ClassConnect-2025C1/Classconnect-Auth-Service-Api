@@ -1,41 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+from models.auth import UserRegister,UserLogin, TokenResponse
+from dbConfig.session import get_db
+from controller.service_controller import Credential
+from utils.security import hash_password, verify_password, create_access_token
 
-from app.db.session import get_db
-from app.models.credential import Credential
-from app.schemas.auth import RegisterInput, LoginInput, TokenResponse
-from app.core.security import hash_password, verify_password, create_access_token, decode_token
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+@router.post("/register", response_model=TokenResponse)
+def register(data: UserRegister, db: Session = Depends(get_db)):
+    if db.query(Credential).filter(Credential.email == data.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-@router.post("/register", status_code=201)
-def register_user(data: RegisterInput, db: Session = Depends(get_db)):
-    if db.query(Credential).filter_by(email=data.email).first():
-        raise HTTPException(status_code=400, detail="Email ya registrado")
-    credential = Credential(
-        user_id=data.user_id,
-        email=data.email,
-        password_hash=hash_password(data.password)
-    )
-    db.add(credential)
+    user = Credential(email=data.email, hashed_password=hash_password(data.password))
+    db.add(user)
     db.commit()
-    return {"message": "Usuario registrado correctamente"}
+    db.refresh(user)
+
+    token = create_access_token({"sub": user.email})
+    return {"access_token": token}
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: LoginInput, db: Session = Depends(get_db)):
-    user = db.query(Credential).filter_by(email=data.email).first()
-    if not user or not verify_password(data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Credenciales inválidas")
-    
-    token = create_access_token({"sub": str(user.user_id), "email": user.email})
-    return TokenResponse(access_token=token)
+def login(data: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == data.email).first()
+    if not user or not verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-@router.get("/me")
-def get_me(token: str = Depends(oauth2_scheme)):
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    return {"user_id": payload.get("sub"), "email": payload.get("email")}
+    token = create_access_token({"sub": user.email})
+    return {"access_token": token}

@@ -1,8 +1,9 @@
-from flask import Blueprint, jsonify
+from sqlalchemy import Column, Integer, String
+from dbConfig.base import Base
 
-bp = Blueprint('main', __name__)
+class Credential(Base):
+    __tablename__ = "credentials"
 
-@bp.route('/healthcheck')
-def healthcheck():
-    return jsonify({"status": "ok"})
-
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
