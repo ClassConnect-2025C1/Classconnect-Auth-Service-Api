@@ -57,16 +57,18 @@ jobs:
 
     - name: Check Coverage Percentage
       run: |
-        echo "📊 Checking minimum required coverage..."
-        COVERAGE=$(pytest --cov=./ --cov-report=term | grep "TOTAL" | awk '{print $NF}' | sed 's/%//')
-        echo "Coverage obtained: $COVERAGE%"
-        if (( $(echo "$COVERAGE >= 75" | bc -l) )); then
-        
-          echo "✅ Coverage is below 75%. Continuing."
-          exit 1
-        fi
-        echo "❌ Error: Coverage is 75% or more. Deployment is blocked."
-
+          echo "📊 Checking minimum required coverage..."
+          COVERAGE=$(pytest --cov=./ --cov-report=term | grep "TOTAL" | awk '{print $NF}' | sed 's/%//')
+          echo "Coverage obtained: $COVERAGE%"
+          
+          if (( $(echo "$COVERAGE < 75" | bc -l) )); then
+            echo "❌ Error: Coverage is below 75%. Deployment is blocked."
+            exit 1
+          fi
+      
+          echo "✅ Coverage is 75% or more. Continuing."
+      
+          
     - name: Deploy to production
       if: github.ref == 'refs/heads/main' && success()
       uses: johnbeynon/render-deploy-action@v0.0.8
