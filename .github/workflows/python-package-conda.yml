@@ -61,10 +61,11 @@ jobs:
         COVERAGE=$(pytest --cov=./ --cov-report=term | grep "TOTAL" | awk '{print $NF}' | sed 's/%//')
         echo "Coverage obtained: $COVERAGE%"
         if (( $(echo "$COVERAGE >= 75" | bc -l) )); then
-          echo "❌ Error: Coverage is 75% or more. Deployment is blocked."
+        
+          echo "✅ Coverage is below 75%. Continuing."
           exit 1
         fi
-        echo "✅ Coverage is below 75%. Continuing."
+        echo "❌ Error: Coverage is 75% or more. Deployment is blocked."
 
     - name: Deploy to production
       if: github.ref == 'refs/heads/main' && success()
