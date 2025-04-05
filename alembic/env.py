@@ -5,9 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 from dotenv import load_dotenv
-from dbConfig.session import Base
 import os
-
+from dbConfig.base import Base
 
 load_dotenv()
 config = context.config
