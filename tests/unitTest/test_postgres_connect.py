@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy.exc import OperationalError
 from dbConfig import session
+
 import os
 from dotenv import load_dotenv
 load_dotenv()
