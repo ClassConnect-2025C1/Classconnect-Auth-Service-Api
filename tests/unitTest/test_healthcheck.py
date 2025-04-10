@@ -1,3 +1,4 @@
+"""
 import pytest
 from flask import Flask
 from controller.service_controller import bp
@@ -17,3 +18,4 @@ def test_healthcheck(client):
     response = client.get("/healthcheck")
     assert response.status_code == 200, "Se esperaba status 200"
     assert response.get_json() == {"status": "ok"}, "La respuesta debe ser {'status': 'ok'}"
+"""

@@ -1,7 +1,11 @@
-from flask import Blueprint, jsonify
+from sqlalchemy import Column, Integer, String
+from dbConfig.base import Base
+import uuid
+from sqlalchemy.dialects.postgresql import UUID 
 
-bp = Blueprint('main', __name__)
+class Credential(Base):
+    __tablename__ = "credentials"
 
-@bp.route('/healthcheck')
-def healthcheck():
-    return jsonify({"status": "ok"})
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
