@@ -18,7 +18,8 @@ def test_user_login_empty_password():
 
 
 def test_user_register_valid_data():
-    user = auth_schemas.UserRegister(email="user@example.com", password="password123")
+    
+    user = auth_schemas.UserRegister(email="user@example.com", password="password123", name="John", last_name="Doe")
     assert user.email == "user@example.com"
     assert user.password == "password123"
 

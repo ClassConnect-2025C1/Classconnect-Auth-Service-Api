@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from controller.service_controller import Credential  # tu modelo SQLAlchemy
 from utils.security import hash_password
+from models.credential_models import Credential
 
 def get_user_by_email(db: Session, email: str):
     return db.query(Credential).filter(Credential.email == email).first()

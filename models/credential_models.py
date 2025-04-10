@@ -1,7 +1,9 @@
-from sqlalchemy import Column,String
-from dbConfig.base import Base
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.declarative import declarative_base
 import uuid
-from sqlalchemy.dialects.postgresql import UUID 
+
+Base = declarative_base()
 
 class Credential(Base):
     __tablename__ = "credentials"
