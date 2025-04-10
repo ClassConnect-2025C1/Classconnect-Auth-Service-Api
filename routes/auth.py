@@ -1,9 +1,11 @@
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from models.auth import UserRegister,UserLogin, TokenResponse
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
 from dbConfig.session import get_db
-from controller.service_controller import Credential
+from models.credential_models import Credential
 from utils.security import hash_password, verify_password, create_access_token
+import httpx
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -11,11 +13,31 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def register(data: UserRegister, db: Session = Depends(get_db)):
     if db.query(Credential).filter(Credential.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # for the momment i create user id here
+    user_id = uuid.uuid4()
 
-    user = Credential(email=data.email, hashed_password=hash_password(data.password))
+    user = Credential(id=user_id ,email=data.email, hashed_password=hash_password(data.password))
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Sent to user service
+    profile_data = {
+        "id": str(user_id),
+        "email": data.email,
+        "name": data.name,
+        "last_name": data.last_name
+    }
+
+    try:
+        response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
+        response.raise_for_status()
+
+    except httpx.HTTPError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating profile: {e}")
+    
 
     token = create_access_token({"sub": user.email})
     return {"access_token": token}
