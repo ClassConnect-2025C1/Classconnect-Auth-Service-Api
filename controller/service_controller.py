@@ -1,11 +1,15 @@
-from sqlalchemy import Column, Integer, String
-from dbConfig.base import Base
-import uuid
-from sqlalchemy.dialects.postgresql import UUID 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
+from dbConfig.session import get_db
+from services.auth_services import register_user, login_user
 
-class Credential(Base):
-    __tablename__ = "credentials"
+router = APIRouter(prefix="/auth", tags=["auth"])
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+@router.post("/register", response_model=TokenResponse)
+def register(data: UserRegister, db: Session = Depends(get_db)):
+    return register_user(data, db)
+
+@router.post("/login", response_model=TokenResponse)
+def login(data: UserLogin, db: Session = Depends(get_db)):
+    return login_user(data, db)
