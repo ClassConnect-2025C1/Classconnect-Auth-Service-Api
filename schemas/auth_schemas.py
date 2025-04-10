@@ -8,6 +8,8 @@ class UserLogin(BaseModel):
 class UserRegister(BaseModel):
     email: EmailStr
     password: str
+    name: str
+    last_name: str
 
 class TokenResponse(BaseModel):
     access_token: str
