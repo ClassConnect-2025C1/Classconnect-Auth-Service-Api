@@ -11,4 +11,4 @@ class UserRegister(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
-    token_type: str = "bearer"
+    token_type: str = "bearer" #This is the standar token type for OAuth2 and JWT
