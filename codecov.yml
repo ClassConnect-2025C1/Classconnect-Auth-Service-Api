@@ -1,0 +1,13 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%     # cobertura total mínima
+    patch:
+      default:
+        target: 90%     # cobertura mínima en líneas nuevas/modificadas
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
