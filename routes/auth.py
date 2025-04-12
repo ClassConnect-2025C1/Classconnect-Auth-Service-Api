@@ -39,7 +39,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error creating profile: {e}")
     
 
-    token = create_access_token({"sub": user.email})
+    token = create_access_token({"sub": str(user.id),"email": user.email})
     return {"access_token": token}
 
 @router.post("/login", response_model=TokenResponse)
@@ -48,5 +48,5 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": user.email, "current_user_id": user.id})
+    token = create_access_token({"current_user_id": str(user.id), "email": user.email})
     return {"access_token": token}
