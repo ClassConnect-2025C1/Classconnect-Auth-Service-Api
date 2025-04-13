@@ -4,9 +4,13 @@ from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
 from dbConfig.session import get_db
 from models.credential_models import Credential
-from utils.security import hash_password, verify_password, create_access_token
+from utils.security import decode_token
+from utils.security import hash_password, verify_password, create_access_token, get_current_user
+from fastapi.security import OAuth2PasswordBearer
 import httpx
 
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenResponse)
@@ -51,3 +55,8 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
+
+@router.get("/protected")
+def protected_route(current_user=Depends(get_current_user)):
+    return {"message": f"Hola {current_user['email']}, estás autenticado"}
+
