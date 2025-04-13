@@ -27,7 +27,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         "id": str(user_id),
         "email": data.email,
         "name": data.name,
-        "last_name": data.last_name
+        "last_name": data.last_name,
+        "role": data.role,
     }
 
     try:
