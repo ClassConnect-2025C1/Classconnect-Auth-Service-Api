@@ -1,3 +1,4 @@
+from http.client import HTTPException
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
@@ -24,10 +25,20 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     
 
 
+from jose.exceptions import ExpiredSignatureError
+
 def decode_token(token: str):
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=401,
+            detail="La sesión ha expirado. Por favor, inicia sesión de nuevo."
+        )
     except JWTError:
-        return None
+        raise HTTPException(
+            status_code=401,
+            detail="Token inválido."
+        )
 
 
