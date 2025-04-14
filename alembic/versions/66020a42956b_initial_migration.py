@@ -18,7 +18,9 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-
+def upgrade():
+    # Aquí definís lo que se crea
+    pass  # o código con op.create_table(), etc.
 
 def downgrade() -> None:
     """Downgrade schema."""
