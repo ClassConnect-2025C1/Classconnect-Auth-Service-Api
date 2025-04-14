@@ -65,14 +65,14 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     if user.lock_until and user.lock_until.tzinfo is None:
         user.lock_until = argentina_tz.localize(user.lock_until)  
     
-    # Verificar si la cuenta está bloqueada
+
     if user.is_locked and user.lock_until > datetime.now(argentina_tz):
         raise HTTPException(
             status_code=403,
             detail=f"The account is locked until {user.lock_until}. Please try again later."
         )
 
-    # Verificar las credenciales
+ 
     if not verify_password(data.password, user.hashed_password):
         user.failed_attempts += 1
         user.last_failed_login = datetime.now(argentina_tz) 
