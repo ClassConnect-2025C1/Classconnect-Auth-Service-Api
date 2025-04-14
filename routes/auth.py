@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -48,14 +50,49 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     return {"access_token": token}
 
 @router.post("/login", response_model=TokenResponse)
+
 def login(data: UserLogin, db: Session = Depends(get_db)):
+ 
+    argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
+    
+ 
     user = db.query(Credential).filter(Credential.email == data.email).first()
-    if not user or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid Email")
+
+  
+    if user.lock_until and user.lock_until.tzinfo is None:
+        user.lock_until = argentina_tz.localize(user.lock_until)  
+    
+
+    if user.is_locked and user.lock_until > datetime.now(argentina_tz):
+        raise HTTPException(
+            status_code=403,
+            detail=f"The account is locked until {user.lock_until}. Please try again later."
+        )
+
+ 
+    if not verify_password(data.password, user.hashed_password):
+        user.failed_attempts += 1
+        user.last_failed_login = datetime.now(argentina_tz) 
+        
+
+        if user.failed_attempts >= 3:
+            user.is_locked = True
+            user.lock_until = datetime.now(argentina_tz) + timedelta(minutes=0.2) 
+
+        db.commit()
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+
+    user.failed_attempts = 0
+    user.last_failed_login = None
+    db.commit()
+
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
-
 @router.get("/protected")
 def protected_route(current_user=Depends(get_current_user)):
     return {"message": f"Hola {current_user['email']}, estás autenticado"}
