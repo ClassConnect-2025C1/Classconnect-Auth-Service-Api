@@ -14,7 +14,7 @@ def create_user(db: Session, email: str, password: str):
     return user
 
 def create_verification_pin(db: Session, user_id: str, pin: str):
-    verification_pin = VerificationPin(user_id=user_id, pin=pin, created_at=datetime.now(timezone.utc) )
+    verification_pin = VerificationPin(user_id=user_id, pin=pin, created_at=datetime.now(timezone.utc), is_valid=True)
     db.add(verification_pin)
     db.commit()
     db.refresh(verification_pin)
@@ -22,3 +22,19 @@ def create_verification_pin(db: Session, user_id: str, pin: str):
 
 def get_verification_pin(db: Session, user_id: str):
     return db.query(VerificationPin).filter(VerificationPin.user_id == user_id).first()
+
+def get_user_by_id(db: Session, user_id: str):
+    return db.query(Credential).filter(Credential.id == user_id).first()
+
+def delete_verification_pin(db: Session, verification_pin: VerificationPin):
+    db.delete(verification_pin)
+    db.commit()
+
+def set_pin_invalid(db: Session, user_id: str):
+    pin_entry = db.query(VerificationPin).filter_by(user_id=user_id).first()
+    if not pin_entry:
+        raise
+    
+    pin_entry.is_valid = False
+    db.commit()
+    db.refresh(pin_entry)
