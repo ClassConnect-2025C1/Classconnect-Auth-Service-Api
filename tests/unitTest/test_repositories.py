@@ -3,6 +3,9 @@
 from unittest.mock import MagicMock
 from repositories.auth_repository import create_user, get_user_by_email
 from models.credential_models import Credential
+from routes import auth
+from controller import service_controller
+from services import auth_services
 
 def test_create_user_with_mock():
     mock_db = MagicMock()
@@ -50,3 +53,20 @@ def test_get_user_by_email_not_found_with_mock():
 
     assert result is None
 
+def test_user_is_not_verified_when_created():
+    mock_db = MagicMock()
+    mock_add = mock_db.add
+    mock_commit = mock_db.commit
+    mock_refresh = mock_db.refresh
+
+    email = "mock@example.com"
+    password = "mockpassword"
+
+    user = create_user(mock_db, email, password)
+
+    mock_add.assert_called_once()
+    mock_commit.assert_called_once()
+    mock_refresh.assert_called_once()
+
+    assert isinstance(user, Credential)
+    assert user.is_verified is False
