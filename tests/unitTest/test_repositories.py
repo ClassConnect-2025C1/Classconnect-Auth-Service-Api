@@ -1,7 +1,7 @@
 # tests/unitTest/test_auth_repository.py
 
 from unittest.mock import MagicMock
-from repositories.auth_repository import create_user, get_user_by_email, get_user_by_id
+from repositories.auth_repository import create_user, get_user_by_email, get_user_by_id, verify_user
 from repositories.auth_repository import create_verification_pin, get_verification_pin, delete_verification_pin, set_pin_invalid
 from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone
@@ -179,3 +179,19 @@ def test_change_is_valid_to_false():
     assert pin_entry.is_valid is False
     mock_db.commit.assert_called_once()
     mock_db.refresh.assert_called_once_with(pin_entry)
+
+def test_change_user_to_verified():
+    mock_db = MagicMock()
+    user_id = "1234567890"
+
+    user = Credential(id=user_id, email="test@example.com", hashed_password="fakehash", is_verified=False)
+
+    # Simulamos la búsqueda del usuario
+    mock_db.query.return_value.filter.return_value.first.return_value = user
+
+    verify_user(mock_db, user_id)
+
+    # Aserciones
+    assert user.is_verified is True
+    mock_db.commit.assert_called_once()
+    mock_db.refresh.assert_called_once_with(user)

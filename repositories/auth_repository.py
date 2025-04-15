@@ -38,3 +38,12 @@ def set_pin_invalid(db: Session, user_id: str):
     pin_entry.is_valid = False
     db.commit()
     db.refresh(pin_entry)
+
+def verify_user(db: Session, user_id: str):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise
+    
+    user.is_verified = True
+    db.commit()
+    db.refresh(user)
