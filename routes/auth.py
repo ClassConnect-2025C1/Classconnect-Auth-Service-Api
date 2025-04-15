@@ -3,12 +3,13 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
+from services.auth_services import verify_pin
 import httpx
 
 
@@ -97,3 +98,8 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 def protected_route(current_user=Depends(get_current_user)):
     return {"message": f"Hola {current_user['email']}, estás autenticado"}
 
+
+@router.post("/verify/{user_id}")
+def verify_user(user_id: str, request: PinRequest, db: Session = Depends(get_db)):
+    verify_pin(db, user_id, request.pin)
+    return {"message": "User verified successfully"}
