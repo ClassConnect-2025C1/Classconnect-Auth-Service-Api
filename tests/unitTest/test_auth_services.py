@@ -6,6 +6,7 @@ import pytest
 from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone, timedelta
 from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_MINUTES, assert_user_already_verified
+from services.auth_services import create_pin, notify_user
 
 def test_login_user_unverified_should_raise_exception():
     # Arrange
@@ -161,3 +162,45 @@ def test_success_verification_delete_pin_from_db():
         verify_pin(mock_db, user_id, correct_pin)
 
         mock_verify_user.assert_called_once_with(mock_db, user_id)
+
+def test_create_random_pin_long_6():
+    first_pin = create_pin()
+    second_pin = create_pin()
+    thrid_pin = create_pin()
+    assert first_pin != second_pin
+    assert second_pin != thrid_pin
+    assert first_pin != thrid_pin
+    assert len(first_pin) == 6
+    assert len(second_pin) == 6
+    assert len(thrid_pin) == 6
+
+def test_success_to_send_notification_return_true():
+    user_id = "1234567890"
+    toTest = "1234567890"
+    channel = "sms"
+    pin = "123456"
+    mock_db = MagicMock()
+
+    with patch("services.auth_services.create_pin", return_value=pin) as mock_create_pin, \
+        patch("services.auth_services.send_notification", return_value=True) as mock_send:
+        result = notify_user(mock_db, user_id, toTest, channel)
+        mock_create_pin.assert_called_once()
+        mock_send.assert_called_once_with(toTest, pin, channel)
+        assert result is True
+
+def test_success_to_send_notification_create_db_entry():
+    user_id = "1234567890"
+    toTest = "1234567890"
+    channel = "sms"
+    pin = "123456"
+    mock_db = MagicMock()
+
+    with patch("services.auth_services.create_pin", return_value=pin), \
+        patch("services.auth_services.send_notification", return_value=True), \
+        patch("services.auth_services.create_verification_pin") as mock_create_entry:
+
+        result = notify_user(mock_db, user_id, toTest, channel)
+
+        mock_create_entry.assert_called_once_with(mock_db, user_id, pin)
+        assert result is True
+

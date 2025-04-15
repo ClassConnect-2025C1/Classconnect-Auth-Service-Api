@@ -1,10 +1,12 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
-from repositories.auth_repository import get_user_by_email, create_user, verify_user
-from repositories.auth_repository import get_verification_pin, get_user_by_id, delete_verification_pin, set_pin_invalid
+from repositories.auth_repository import get_user_by_email, create_user, verify_user, get_user_by_id
+from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
+import random
+from externals.notify_service import send_notification
 
 PIN_EXPIRATION_MINUTES = 10
 
@@ -39,6 +41,12 @@ def verify_pin(db: Session, user_id: str, pin: str):
     make_user_verified(db, user_id)
     return True
 
+def notify_user(db: Session, user_id: str, to: str, channel: str):
+    pin = create_pin()
+    result = send_notification(to, pin, channel)
+    if result:
+        create_verification_pin(db, user_id, pin)
+    return result
 
 
 ########### UTILS ###########
@@ -68,3 +76,8 @@ def assert_pin_not_expired(db, user_id, verification_pin):
     if verification_pin.created_at + timedelta(minutes=PIN_EXPIRATION_MINUTES) < date_now:
         make_invalid_pin(db, user_id)
         raise HTTPException(status_code=410, detail="Verification pin expired")
+    
+def create_pin():
+    # This function should create a new pin and return it
+    # For now, we will just return a dummy pin
+    return ''.join(random.choices('0123456789', k=6))
