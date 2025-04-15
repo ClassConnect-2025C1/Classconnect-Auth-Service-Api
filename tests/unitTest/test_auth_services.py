@@ -5,7 +5,7 @@ from fastapi import HTTPException
 import pytest
 from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone, timedelta
-from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_MINUTES
+from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_MINUTES, assert_user_already_verified
 
 def test_login_user_unverified_should_raise_exception():
     # Arrange
@@ -32,17 +32,19 @@ def test_login_user_unverified_should_raise_exception():
 
 def test_try_verify_alreadyverified_user_raise_404_code():
     mock_db = MagicMock()
-    user_id =  "1234567890"
-    pin = "123456"
+    user_id = "1234567890"
+    
+    # Creamos un usuario simulado marcado como verificado
+    mock_user = Credential()
+    mock_user.id = user_id
+    mock_user.is_verified = True
 
-    with patch("services.auth_services.get_verification_pin", return_value=None):
-        # Simulate the behavior of get_verification_pin to return None
-
+    with patch("services.auth_services.get_user_by_id", return_value=mock_user):
         with pytest.raises(HTTPException) as exc:
-            verify_pin(mock_db, user_id, pin)
+            assert_user_already_verified(mock_db, user_id)
 
         assert exc.value.status_code == 404
-        assert exc.value.detail == "Verification pin not found"
+        assert exc.value.detail == "User already verified"
 
 def test_try_verify_invalid_pin_raise_401_code():
     mock_db = MagicMock()
@@ -52,7 +54,8 @@ def test_try_verify_invalid_pin_raise_401_code():
 
     verificacion_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=datetime.now(timezone.utc))
 
-    with patch("services.auth_services.get_verification_pin", return_value=verificacion_pin):
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=verificacion_pin):
         # Simulate the behavior of get_verification_pin to return None
         with pytest.raises(HTTPException) as exc:
             verify_pin(mock_db, user_id, invalid_pin)
@@ -68,10 +71,93 @@ def test_try_expired_pin_raise_410_code():
 
     expired_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=expired_time)
 
-    with patch("services.auth_services.get_verification_pin", return_value=expired_pin):
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=expired_pin):
         # Simulate the behavior of get_verification_pin to return None
         with pytest.raises(HTTPException) as exc:
             verify_pin(mock_db, user_id, correct_pin)
 
         assert exc.value.status_code == 410
         assert exc.value.detail == "Verification pin expired"
+
+def test_succes_verification_return_true():
+    mock_db = MagicMock()
+    user_id =  "1234567890"
+    correct_pin = "0123456789"
+    created_time = datetime.now(timezone.utc)
+
+    valid_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=created_time)
+
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=valid_pin):
+        # Simulate the behavior of get_verification_pin to return None
+        result = verify_pin(mock_db, user_id, correct_pin)
+
+        assert result is True  # No exception means success
+
+def test_success_verification_delete_pin_from_db():
+    mock_db = MagicMock()
+    user_id =  "1234567890"
+    correct_pin = "0123456789"
+    created_time = datetime.now(timezone.utc)
+
+    valid_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=created_time)
+
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=valid_pin), \
+        patch("services.auth_services.delete_verification_pin") as mock_delete:
+        
+        verify_pin(mock_db, user_id, correct_pin)
+
+        mock_delete.assert_called_once_with(mock_db, valid_pin)
+
+def test_enter_invalid_pin_make_invalid_the_real():
+    mock_db = MagicMock()
+    user_id =  "1234567890"
+    correct_pin = "0123456789"
+    invalid_pin = "9876543210"
+
+    verificacion_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=datetime.now(timezone.utc))
+
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=verificacion_pin), \
+        patch("services.auth_services.make_invalid_pin") as mock_invalid_pin:
+        # Simulate the behavior of get_verification_pin to return None
+        with pytest.raises(HTTPException) as exc:
+            verify_pin(mock_db, user_id, invalid_pin)
+
+        mock_invalid_pin.assert_called_once_with(mock_db, user_id)
+
+def test_enter_expired_pin_make_invalid_the_real():
+    mock_db = MagicMock()
+    user_id =  "1234567890"
+    correct_pin = "0123456789"
+    expired_time = datetime.now(timezone.utc) - timedelta(minutes=15)
+
+    expired_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=expired_time)
+
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=expired_pin), \
+        patch("services.auth_services.make_invalid_pin") as mock_invalid_pin:
+        # Simulate the behavior of get_verification_pin to return None
+        with pytest.raises(HTTPException) as exc:
+            verify_pin(mock_db, user_id, correct_pin)
+
+        mock_invalid_pin.assert_called_once_with(mock_db, user_id)
+
+def test_success_verification_delete_pin_from_db():
+    mock_db = MagicMock()
+    user_id =  "1234567890"
+    correct_pin = "0123456789"
+    created_time = datetime.now(timezone.utc)
+
+    valid_pin = VerificationPin(user_id=user_id, pin=correct_pin, created_at=created_time)
+
+    with patch("services.auth_services.assert_user_already_verified", return_value=None), \
+        patch("services.auth_services.get_verification_pin", return_value=valid_pin), \
+        patch("services.auth_services.delete_verification_pin"), \
+        patch("services.auth_services.make_user_verified") as mock_verify_user:
+        
+        verify_pin(mock_db, user_id, correct_pin)
+
+        mock_verify_user.assert_called_once_with(mock_db, user_id)
