@@ -26,28 +26,26 @@ def login_user(data: UserLogin, db: Session) -> TokenResponse:
     token = create_access_token({"sub": user.email, "current_user_id": str(user.id)})
     return TokenResponse(access_token=token)
 
-
-def assert_user_not_verified(user):
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="User not verified")
     
 def verify_pin(db: Session, user_id: str, pin: str):
     assert_user_already_verified(db, user_id)
 
     verification_pin = get_verification_pin(db, user_id)
 
-    if verification_pin.pin != pin:
-        make_invalid_pin(db, user_id)
-        raise HTTPException(status_code=401, detail="Invalid verification pin")
-    
-    date_now = datetime.now(timezone.utc)
-    if verification_pin.created_at + timedelta(minutes=PIN_EXPIRATION_MINUTES) < date_now:
-        make_invalid_pin(db, user_id)
-        raise HTTPException(status_code=410, detail="Verification pin expired")
+    assert_pin_is_not_correct(db, user_id, pin, verification_pin)
+    assert_pin_not_expired(db, user_id, verification_pin)
     
     delete_verification_pin(db, verification_pin)
     make_user_verified(db, user_id)
     return True
+
+
+
+########### UTILS ###########
+
+def assert_user_not_verified(user):
+    if not user.is_verified:
+        raise HTTPException(status_code=403, detail="User not verified")
 
 def assert_user_already_verified(db, user_id):
     user = get_user_by_id(db, user_id)
@@ -59,3 +57,14 @@ def make_invalid_pin(db: Session ,user_id: str):
 
 def make_user_verified(db: Session, user_id: str):
     verify_user(db, user_id)
+
+def assert_pin_is_not_correct(db, user_id, pin, verification_pin):
+    if verification_pin.pin != pin:
+        make_invalid_pin(db, user_id)
+        raise HTTPException(status_code=401, detail="Invalid verification pin")
+
+def assert_pin_not_expired(db, user_id, verification_pin):
+    date_now = datetime.now(timezone.utc)
+    if verification_pin.created_at + timedelta(minutes=PIN_EXPIRATION_MINUTES) < date_now:
+        make_invalid_pin(db, user_id)
+        raise HTTPException(status_code=410, detail="Verification pin expired")
