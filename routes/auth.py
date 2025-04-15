@@ -12,7 +12,6 @@ from fastapi.security import OAuth2PasswordBearer
 import httpx
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenResponse)
