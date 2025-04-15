@@ -26,3 +26,4 @@ class VerificationPin(Base):
     user_id = Column(String, primary_key=True)
     pin = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    is_valid = Column(Boolean, default=True)
