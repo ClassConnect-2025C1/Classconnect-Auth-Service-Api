@@ -16,6 +16,13 @@ def login_user(data: UserLogin, db: Session) -> TokenResponse:
     user = get_user_by_email(db, data.email)
     if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    assert_user_verified(user)
 
     token = create_access_token({"sub": user.email, "current_user_id": str(user.id)})
     return TokenResponse(access_token=token)
+
+
+def assert_user_verified(user):
+    if not user.is_verified:
+        raise HTTPException(status_code=403, detail="User not verified")
