@@ -31,3 +31,8 @@ class VerificationPin(BaseModel):
     user_id: str
     pin: str
     created_at: datetime
+
+class NotificationRequest(BaseModel):
+    to: str
+    channel: str
+    pin: str

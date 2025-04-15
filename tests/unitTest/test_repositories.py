@@ -91,7 +91,7 @@ def test_create_verification_pin_returns_model():
     mock_commit = mock_db.commit
     mock_refresh = mock_db.refresh
 
-    user_id = "user@example.com"
+    user_id = "123456790"
     pin = "123456"
 
     result = create_verification_pin(mock_db, user_id, pin)
