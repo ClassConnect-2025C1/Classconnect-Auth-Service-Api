@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose.exceptions import ExpiredSignatureError
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecret")
 ALGORITHM = "HS256"
@@ -40,6 +40,9 @@ def decode_token(token: str):
             status_code=401,
             detail="Token inválido."
         )
+
+def get_token_expiry():
+    return timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
