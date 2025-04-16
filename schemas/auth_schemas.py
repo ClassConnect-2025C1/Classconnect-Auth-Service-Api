@@ -2,6 +2,8 @@ from pydantic import BaseModel, EmailStr
 from enum import Enum
 from datetime import datetime
 
+
+
 class UserRole(str, Enum):
     student = "student"
     teacher = "teacher"
