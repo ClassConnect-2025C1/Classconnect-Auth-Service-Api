@@ -49,6 +49,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     token = create_access_token({"sub": str(user.id),"email": user.email})
     return {"access_token": token}
 
+
 @router.post("/login", response_model=TokenResponse)
 def login(data: UserLogin, db: Session = Depends(get_db)):
     argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
