@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import pytz
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, requests, status
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest
 from dbConfig.session import get_db
@@ -13,7 +13,6 @@ from services.auth_services import verify_pin
 import httpx
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=TokenResponse)
@@ -94,6 +93,68 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
+
+@router.post("/google", response_model=TokenResponse)
+def login_with_google(data: dict, db: Session = Depends(get_db)):
+    access_token = data.get("access_token")
+    if not access_token:
+        raise HTTPException(status_code=400, detail="Token de Google no proporcionado.")
+
+    try:
+        google_response = requests.get(
+            f"https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token={access_token}",
+            timeout=5
+        )
+    except requests.RequestException:
+        raise HTTPException(status_code=503, detail="No se pudo conectar con Google. Intentalo de nuevo más tarde.")
+
+    if google_response.status_code == 401:
+        raise HTTPException(status_code=401, detail="Token de Google inválido o expirado.")
+    elif google_response.status_code != 200:
+        raise HTTPException(status_code=500, detail="Error inesperado al validar el token de Google.")
+
+    user_info = google_response.json()
+    email = user_info.get("email")
+    name = user_info.get("given_name", "")
+    last_name = user_info.get("family_name", "")
+    picture = user_info.get("picture", "")  # URL de la foto de perfil
+
+    if not email:
+        raise HTTPException(status_code=400, detail="No se pudo obtener el correo electrónico del usuario de Google.")
+
+    # Buscar al usuario en la base de datos
+    user = db.query(Credential).filter(Credential.email == email).first()
+
+    if not user:
+        user_id = uuid.uuid4()
+        user = Credential(id=user_id, email=email, hashed_password="")  # Contraseña vacía
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        # Crear perfil en el microservicio de user
+        profile_data = {
+            "id": str(user_id),
+            "email": email,
+            "name": name,
+            "last_name": last_name,
+            "role": "student",
+            "picture": picture,  # Nuevo: incluir foto de perfil
+        }
+
+        try:
+            response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Error creando el perfil: {e}")
+
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {"access_token": token}
+
+
+
+
 @router.get("/protected")
 def protected_route(current_user=Depends(get_current_user)):
     return {"message": f"Hola {current_user['email']}, estás autenticado"}
