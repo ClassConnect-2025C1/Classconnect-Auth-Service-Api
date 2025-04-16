@@ -1,8 +1,8 @@
-"""initial schema
+"""add failed_attempts field
 
-Revision ID: 51ab6e4fed73
+Revision ID: 1116d242f4fa
 Revises: 
-Create Date: 2025-04-16 15:54:59.177022
+Create Date: 2025-04-16 16:56:47.801307
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '51ab6e4fed73'
+revision: str = '1116d242f4fa'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
