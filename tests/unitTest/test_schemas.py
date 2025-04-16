@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 from schemas import auth_schemas
+from datetime import datetime, timezone
 
 def test_user_login_valid_data():
     user = auth_schemas.UserLogin(email="test@example.com", password="securepassword123")
@@ -40,3 +41,18 @@ def test_token_response_default_type():
 def test_token_response_custom_type():
     token = auth_schemas.TokenResponse(access_token="some.jwt.token", token_type="custom")
     assert token.token_type == "custom"
+
+
+def test_verification_pin_valid_data():
+    # Simula una fecha con timezone (UTC en este caso)
+    aware_dt = datetime.now(timezone.utc)
+
+    user_id = "12345"
+    pin = "123456"
+    schema = auth_schemas.VerificationPin(user_id=user_id, pin=pin, created_at=aware_dt)
+
+    assert schema.user_id == user_id
+    assert schema.pin == pin
+    assert isinstance(schema.created_at, datetime)
+    assert schema.created_at.tzinfo is not None
+    assert schema.created_at.utcoffset() is not None
