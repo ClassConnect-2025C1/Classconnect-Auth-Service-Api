@@ -78,33 +78,22 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
         )
 
     if not verify_password(data.password, user.hashed_password):
-        user.failed_attempts += 1
-        user.last_failed_login = now
-
-        if user.failed_attempts >= 3:
-            user.is_locked = True
-            user.lock_until = now + timedelta(minutes=0.2)
-
-        db.commit()
-
         raise HTTPException(
             status_code=401,
             detail={
                 "type": "invalid_password",
-                "message": "Invalid password",
-                "remaining_attempts": max(0, 3 - user.failed_attempts)
+                "message": "Invalid password"
             }
         )
 
-
-    user.failed_attempts = 0
-    user.last_failed_login = None
+    # Reset lock status if login is successful
     user.is_locked = False
     user.lock_until = None
     db.commit()
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
+
 
 @router.post("/google", response_model=TokenResponse)
 def login_with_google(data: dict, db: Session = Depends(get_db)):
