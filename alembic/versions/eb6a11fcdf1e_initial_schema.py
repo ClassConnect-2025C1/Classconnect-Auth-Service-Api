@@ -5,7 +5,7 @@ Revises:
 Create Date: 2025-04-17 09:26:12.232309
 
 """
-import datetime
+from datetime import datetime, timezone
 from typing import Sequence, Union
 
 from alembic import op
@@ -39,12 +39,13 @@ def upgrade() -> None:
         'verification_pins',
         sa.Column('user_id', sa.String(), primary_key=True),
         sa.Column('pin', sa.String(), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, default=datetime.utcnow),
+        # Use server_default for consistent timestamp generation
+        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column('is_valid', sa.Boolean(), default=True)
     )
 
 def downgrade() -> None:
     """Downgrade schema."""
     # Drop tables in downgrade
-    op.drop_table('credentials')
     op.drop_table('verification_pins')
+    op.drop_table('credentials')
