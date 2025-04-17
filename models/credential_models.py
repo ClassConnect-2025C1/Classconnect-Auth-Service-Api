@@ -3,7 +3,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Column, String, Integer, Boolean, DateTime
-from datetime import datetime
+from datetime import datetime, timezone
 
 from dbConfig.base import Base  
 
@@ -27,5 +27,5 @@ class VerificationPin(Base):
  
      user_id = Column(String, primary_key=True)
      pin = Column(String, nullable=False)
-     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
      is_valid = Column(Boolean, default=True)
