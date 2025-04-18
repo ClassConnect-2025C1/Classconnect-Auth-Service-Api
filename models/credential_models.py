@@ -23,9 +23,9 @@ class Credential(Base):
  
  
 class VerificationPin(Base):
-     __tablename__ = "verification_pins"
- 
-     user_id = Column(String, primary_key=True)
-     pin = Column(String, nullable=False)
-     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
-     is_valid = Column(Boolean, default=True)
+    __tablename__ = "verification_pins"
+
+    email = Column(String, unique=True, nullable=False, primary_key=True)
+    pin = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
+    is_valid = Column(Boolean, default=True)

@@ -27,16 +27,15 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer" #This is the standar token type for OAuth2 and JWT
 
 class PinRequest(BaseModel):
-    user_id: str
+    email: str
     pin: str
 
 class VerificationPin(BaseModel):
-    user_id: str
+    email: str
     pin: str
     created_at: datetime
 
 class NotificationRequest(BaseModel):
-    user_id: str
+    email: str
     to: str
     channel: str
-    pin: str
