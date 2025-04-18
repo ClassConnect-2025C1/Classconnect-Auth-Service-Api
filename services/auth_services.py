@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
 from repositories.auth_repository import get_user_by_email, create_user, verify_user
-from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin
+from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
@@ -48,7 +48,10 @@ def notify_user(db: Session, user_email: str, to: str, channel: str):
     pin = create_pin()
     result = send_notification(to, pin, channel)
     if result:
-        create_verification_pin(db, user_email, pin)
+        if get_verification_pin(db, user_email):
+            set_new_pin(db, user_email, pin)
+        else:
+            create_verification_pin(db, user_email, pin)
     return result
 
 
