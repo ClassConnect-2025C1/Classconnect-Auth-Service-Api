@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import random
 from externals.notify_service import send_notification
 
-PIN_EXPIRATION_MINUTES = 0.2
+PIN_EXPIRATION_SECONDS = 30
 
 def register_user(data: UserRegister, db: Session) -> TokenResponse:
     if get_user_by_email(db, data.email):
@@ -76,7 +76,7 @@ def assert_pin_is_not_correct(db, user_email, pin, verification_pin):
 
 def assert_pin_not_expired(db, user_email, verification_pin):
     date_now = datetime.now(timezone.utc)
-    if verification_pin.created_at + timedelta(minutes=PIN_EXPIRATION_MINUTES) < date_now:
+    if verification_pin.created_at + timedelta(seconds=PIN_EXPIRATION_SECONDS) < date_now:
         make_invalid_pin(db, user_email)
         raise HTTPException(status_code=410, detail="Verification pin expired")
     
