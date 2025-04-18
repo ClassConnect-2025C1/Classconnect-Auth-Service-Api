@@ -20,6 +20,7 @@ class UserRegister(BaseModel):
     name: str
     last_name: str
     role: UserRole 
+    phone: str
     
 
 class TokenResponse(BaseModel):

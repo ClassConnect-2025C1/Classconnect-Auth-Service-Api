@@ -40,6 +40,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "name": data.name,
             "last_name": data.last_name,
             "role": data.role,
+            "phone": data.phone,
         }
 
         response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
@@ -171,7 +172,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
             "name": name,
             "last_name": last_name,
             "role": "student",
-            "picture": picture,  # Nuevo: incluir foto de perfil
+            "picture": picture,  # Nuevo: incluir foto de perfi
         }
 
         try:
