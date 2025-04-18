@@ -68,12 +68,13 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
             status_code=401,
             detail="Invalid Email"
         )
-    
+    """ 
     if not user.is_verified:
         raise HTTPException(
             status_code=401,
             detail="User not verified"
         )
+    """
 
 
     if user.lock_until and user.lock_until.tzinfo is None:
