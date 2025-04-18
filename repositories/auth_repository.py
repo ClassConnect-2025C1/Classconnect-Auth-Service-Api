@@ -23,8 +23,6 @@ def create_verification_pin(db: Session, user_email: str, pin: str):
 def get_verification_pin(db: Session, user_email: str):
     return db.query(VerificationPin).filter(VerificationPin.email == user_email).first()
 
-def get_user_by_id(db: Session, user_id: str):
-    return db.query(Credential).filter(Credential.id == user_id).first()
 
 def delete_verification_pin(db: Session, verification_pin: VerificationPin):
     db.delete(verification_pin)

@@ -59,6 +59,12 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
             status_code=401,
             detail="Invalid Email"
         )
+    
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=401,
+            detail="User not verified"
+        )
 
     if not verify_password(data.password, user.hashed_password):
         raise HTTPException(

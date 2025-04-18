@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
-from repositories.auth_repository import get_user_by_email, create_user, verify_user, get_user_by_id
+from repositories.auth_repository import get_user_by_email, create_user, verify_user
 from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone

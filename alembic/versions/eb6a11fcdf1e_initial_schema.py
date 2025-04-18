@@ -37,7 +37,7 @@ def upgrade() -> None:
     # Create verification_pins table
     op.create_table(
         'verification_pins',
-        sa.Column('user_id', sa.String(), primary_key=True),
+        sa.Column('email', sa.String(), primary_key=True),
         sa.Column('pin', sa.String(), nullable=False),
         # Use server_default for consistent timestamp generation
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),

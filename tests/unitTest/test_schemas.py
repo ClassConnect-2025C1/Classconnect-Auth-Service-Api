@@ -47,11 +47,11 @@ def test_verification_pin_valid_data():
     # Simula una fecha con timezone (UTC en este caso)
     aware_dt = datetime.now(timezone.utc)
 
-    user_id = "12345"
+    user_email = "tesEmail@test.com"
     pin = "123456"
-    schema = auth_schemas.VerificationPin(user_id=user_id, pin=pin, created_at=aware_dt)
+    schema = auth_schemas.VerificationPin(email=user_email, pin=pin, created_at=aware_dt)
 
-    assert schema.user_id == user_id
+    assert schema.email == user_email
     assert schema.pin == pin
     assert isinstance(schema.created_at, datetime)
     assert schema.created_at.tzinfo is not None
