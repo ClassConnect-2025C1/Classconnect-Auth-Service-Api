@@ -7,6 +7,7 @@ from alembic import context
 from dotenv import load_dotenv
 import os
 from dbConfig.base import Base
+from models.credential_models import Credential, VerificationPin
 
 if os.getenv("RENDER") != "TRUE":
     load_dotenv(dotenv_path=".env.development")

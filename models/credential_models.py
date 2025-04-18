@@ -1,10 +1,10 @@
 import enum
 from sqlalchemy import Column, String, Integer, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from dbConfig.base import Base
 from datetime import datetime
 
-Base = declarative_base()
+
 
 
 class Credential(Base):
@@ -23,7 +23,7 @@ class Credential(Base):
 class VerificationPin(Base):
     __tablename__ = "verification_pins"
 
-    user_id = Column(String, primary_key=True)
+    email = Column(String, unique=True, nullable=False, primary_key=True)
     pin = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     is_valid = Column(Boolean, default=True)
