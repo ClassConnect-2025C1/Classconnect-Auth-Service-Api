@@ -5,13 +5,17 @@ import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose.exceptions import ExpiredSignatureError
+from sqlalchemy.orm import Session
+from dbConfig.session import get_db
+
+from models.credential_models import Credential
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecret")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = 0.2
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
@@ -29,7 +33,8 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 def decode_token(token: str):
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=401,
@@ -41,11 +46,12 @@ def decode_token(token: str):
             detail="Token inválido."
         )
 
+
 def get_token_expiry():
     return timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token inválido",
@@ -53,11 +59,22 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     )
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_token(token)
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-        return {"id": user_id, "email": payload.get("email")}
+
+        # Verificar si la cuenta está bloqueada
+        user = db.query(Credential).filter(Credential.id == user_id).first()
+        if user.is_locked and user.lock_until > datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Cuenta bloqueada. Intenta nuevamente más tarde.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return {"id": user_id, "email": payload.get("email"), "is_locked": user.is_locked, "lock_until": user.lock_until}
+
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

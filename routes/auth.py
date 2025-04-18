@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status
@@ -10,8 +10,11 @@ from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
 from services.auth_services import verify_pin, notify_user
+from dbConfig.session import get_db
 import httpx
 
+MAX_FAILED_ATTEMPTS = 3
+LOCK_TIME = timedelta(minutes=0.3)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,10 +52,11 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     token = create_access_token({"sub": str(user.id),"email": user.email})
     return {"access_token": token}
 
-
 @router.post("/login", response_model=TokenResponse)
 def login(data: UserLogin, db: Session = Depends(get_db)):
     user = db.query(Credential).filter(Credential.email == data.email).first()
+    buenos_aires_tz = pytz.timezone('America/Argentina/Buenos_Aires')
+    now = datetime.now(buenos_aires_tz)
 
     if not user:
         raise HTTPException(
@@ -60,11 +64,53 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid Email"
         )
 
+
+    if user.lock_until and user.lock_until.tzinfo is None:
+        user.lock_until = buenos_aires_tz.localize(user.lock_until)
+
+   
+    if user.is_locked and user.lock_until and now > user.lock_until:
+        user.is_locked = False
+        user.failed_attempts = 0
+        user.lock_until = None
+        db.commit()
+
+
+    if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
+        user.is_locked = True
+        user.lock_until = now + LOCK_TIME
+        db.commit()
+        db.refresh(user)
+
+        lock_until_arg = user.lock_until.strftime('%Y-%m-%d %H:%M:%S')
+
+        raise HTTPException(
+            status_code=401,
+            detail=f"Too many failed attempts. Your account has been locked until {lock_until_arg} (Argentina Time)."
+        )
+
+
     if not verify_password(data.password, user.hashed_password):
+        user.failed_attempts += 1
+        user.last_failed_login = now
+
+        if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
+            user.is_locked = True
+            user.lock_until = now + LOCK_TIME
+
+        db.commit()
+        db.refresh(user)
         raise HTTPException(
             status_code=401,
             detail="Invalid password"
         )
+
+   
+    user.failed_attempts = 0
+    user.last_failed_login = None
+    user.is_locked = False
+    user.lock_until = None
+    db.commit()
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
@@ -93,7 +139,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
     email = user_info.get("email")
     name = user_info.get("given_name", "")
     last_name = user_info.get("family_name", "")
-    picture = user_info.get("picture", "")  # URL de la foto de perfil
+    picture = user_info.get("picture", "")  
 
     if not email:
         raise HTTPException(status_code=400, detail="No se pudo obtener el correo electrónico del usuario de Google.")
@@ -103,12 +149,12 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
 
     if not user:
         user_id = uuid.uuid4()
-        user = Credential(id=user_id, email=email, hashed_password="")  # Contraseña vacía
+        user = Credential(id=user_id, email=email, hashed_password="")  
         db.add(user)
         db.commit()
         db.refresh(user)
 
-        # Crear perfil en el microservicio de user
+    
         profile_data = {
             "id": str(user_id),
             "email": email,
@@ -133,7 +179,12 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
 
 @router.get("/protected")
 def protected_route(current_user=Depends(get_current_user)):
-    return {"message": f"Hola {current_user['email']}, estás autenticado"}
+    if current_user["is_locked"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Cuenta bloqueada. Intenta nuevamente más tarde.",
+        )
+    return {"message": f"Hola {current_user['email']}, estás autenticado."}
 
 
 @router.post("/verify")
