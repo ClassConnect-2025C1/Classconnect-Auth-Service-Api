@@ -15,6 +15,7 @@ import httpx
 
 MAX_FAILED_ATTEMPTS = 3
 LOCK_TIME = timedelta(minutes=0.3)
+CHANNEL = "sms"
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -43,6 +44,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "phone": data.phone,
         }
 
+        notify_user(db, data.email, data.phone, CHANNEL)
+
         response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
         response.raise_for_status()
 
@@ -68,13 +71,12 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
             status_code=401,
             detail="Invalid Email"
         )
-    """ 
+
     if not user.is_verified:
         raise HTTPException(
             status_code=401,
             detail="User not verified"
         )
-    """
 
 
     if user.lock_until and user.lock_until.tzinfo is None:
