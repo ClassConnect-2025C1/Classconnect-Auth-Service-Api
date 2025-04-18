@@ -61,7 +61,8 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid Email")
 
-  
+    if not user.is_verified:
+        raise HTTPException(status_code=403, detail="User not verified")
     if user.lock_until and user.lock_until.tzinfo is None:
         user.lock_until = argentina_tz.localize(user.lock_until)  
     
@@ -160,12 +161,12 @@ def protected_route(current_user=Depends(get_current_user)):
     return {"message": f"Hola {current_user['email']}, estás autenticado"}
 
 
-@router.post("/verify")
+@router.post("/verification")
 def verify_user(request: PinRequest, db: Session = Depends(get_db)):
-    verify_pin(db, request.user_id, request.pin)
+    verify_pin(db, request.email, request.pin)
     return {"message": "User verified successfully"}
 
-@router.post("/notify")
-def notify_user(request: NotificationRequest, db: Session = Depends(get_db), ):
-    notify_user(db, request.user_id, request.to, request.channel)
+@router.post("/notification")
+def notification_user(request: NotificationRequest, db: Session = Depends(get_db), ):
+    notify_user(db, request.email, request.to, request.channel)
     return {"message": "Notification sent successfully"}
