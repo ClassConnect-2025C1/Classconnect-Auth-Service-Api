@@ -7,17 +7,16 @@ from alembic import context
 from dotenv import load_dotenv
 import os
 from dbConfig.base import Base
-from models.credential_models import Credential, VerificationPin
+from models import credential_models
 
 if os.getenv("RENDER") != "TRUE":
     load_dotenv(dotenv_path=".env.development")
-
-
 load_dotenv()
-
 config = context.config
 DATABASE_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@" \
     f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+print("===> URL de base de datos que se está usando:")
+
 
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
