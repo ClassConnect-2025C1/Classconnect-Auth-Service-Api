@@ -16,7 +16,7 @@ def send_notification(to: str, pin: str, channel: str):
         elif response.status_code == 404:
             raise HTTPException(status_code=404, detail="Notification rejected by provider")
         elif response.status_code == 400:
-            raise HTTPException(status_code=400, detail="Notification forbidden")
+            raise HTTPException(status_code=400, detail="One or more fields are missing or invalid")
 
     except requests.RequestException as e:
         raise HTTPException(status_code=503, detail=f"Notification service unavailable: {str(e)}")
