@@ -2,13 +2,13 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
 from repositories.auth_repository import get_user_by_email, create_user, verify_user
-from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin
+from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
 from externals.notify_service import send_notification
 
-PIN_EXPIRATION_MINUTES = 0.2
+PIN_EXPIRATION_SECONDS = 30
 
 def register_user(data: UserRegister, db: Session) -> TokenResponse:
     if get_user_by_email(db, data.email):
@@ -48,7 +48,10 @@ def notify_user(db: Session, user_email: str, to: str, channel: str):
     pin = create_pin()
     result = send_notification(to, pin, channel)
     if result:
-        create_verification_pin(db, user_email, pin)
+        if get_verification_pin(db, user_email):
+            set_new_pin(db, user_email, pin)
+        else:
+            create_verification_pin(db, user_email, pin)
     return result
 
 
@@ -76,7 +79,7 @@ def assert_pin_is_not_correct(db, user_email, pin, verification_pin):
 
 def assert_pin_not_expired(db, user_email, verification_pin):
     date_now = datetime.now(timezone.utc)
-    if verification_pin.created_at + timedelta(minutes=PIN_EXPIRATION_MINUTES) < date_now:
+    if verification_pin.created_at + timedelta(seconds=PIN_EXPIRATION_SECONDS) < date_now:
         make_invalid_pin(db, user_email)
         raise HTTPException(status_code=410, detail="Verification pin expired")
     

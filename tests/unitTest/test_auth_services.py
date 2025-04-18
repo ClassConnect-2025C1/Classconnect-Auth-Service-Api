@@ -5,7 +5,7 @@ from fastapi import HTTPException
 import pytest
 from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone, timedelta
-from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_MINUTES, assert_user_already_verified
+from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_SECONDS, assert_user_already_verified
 from services.auth_services import create_pin, notify_user
 
 def test_login_user_unverified_should_raise_exception():
@@ -197,6 +197,7 @@ def test_success_to_send_notification_create_db_entry():
 
     with patch("services.auth_services.create_pin", return_value=pin), \
         patch("services.auth_services.send_notification", return_value=True), \
+        patch("services.auth_services.get_verification_pin", return_value=False), \
         patch("services.auth_services.create_verification_pin") as mock_create_entry:
 
         result = notify_user(mock_db, user_email, toTest, channel)
