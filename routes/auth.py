@@ -18,39 +18,43 @@ LOCK_TIME = timedelta(minutes=0.3)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
+
 @router.post("/register", response_model=TokenResponse)
 def register(data: UserRegister, db: Session = Depends(get_db)):
     if db.query(Credential).filter(Credential.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-    
-    # for the momment i create user id here
-    user_id = uuid.uuid4()
-
-    user = Credential(id=user_id ,email=data.email, hashed_password=hash_password(data.password))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    # Sent to user service
-    profile_data = {
-        "id": str(user_id),
-        "email": data.email,
-        "name": data.name,
-        "last_name": data.last_name,
-        "role": data.role,
-    }
 
     try:
+        user_id = uuid.uuid4()
+        user = Credential(id=user_id, email=data.email, hashed_password=hash_password(data.password))
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+   
+        profile_data = {
+            "id": str(user_id),
+            "email": data.email,
+            "name": data.name,
+            "last_name": data.last_name,
+            "role": data.role,
+        }
+
         response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
         response.raise_for_status()
 
-    except httpx.HTTPError as e:
+    except httpx.HTTPStatusError as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error creating profile: {e}")
-    
+        raise HTTPException(status_code=500, detail=f"Error creating profile: {str(e)}")
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
-    token = create_access_token({"sub": str(user.id),"email": user.email})
+    token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
+
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: UserLogin, db: Session = Depends(get_db)):
