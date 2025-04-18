@@ -12,6 +12,10 @@ from fastapi.security import OAuth2PasswordBearer
 from services.auth_services import verify_pin, notify_user
 from dbConfig.session import get_db
 import httpx
+from dotenv import load_dotenv
+import os
+load_dotenv()
+USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL", "http://localhost:8001")
 
 MAX_FAILED_ATTEMPTS = 3
 LOCK_TIME = timedelta(minutes=0.3)
@@ -43,7 +47,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "phone": data.phone,
         }
 
-        response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
+        response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
         response.raise_for_status()
 
     except httpx.HTTPStatusError as e:
@@ -177,7 +181,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
         }
 
         try:
-            response = httpx.post("http://localhost:8001/users/profile", json=profile_data)
+            response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
             response.raise_for_status()
         except httpx.HTTPError as e:
             db.rollback()
