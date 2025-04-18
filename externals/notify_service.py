@@ -1,6 +1,9 @@
 import requests
 from fastapi import HTTPException
-NOTIFICATION_SERVICE_URL = "http://localhost:8003/notifications"
+import os
+
+prefix = os.getenv('URL_NOTIFICATION')
+NOTIFICATION_SERVICE_URL = prefix +"/notifications"
 
 def send_notification(to: str, pin: str, channel: str):
     payload = {
