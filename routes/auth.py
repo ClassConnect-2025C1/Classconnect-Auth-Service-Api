@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
@@ -16,6 +18,11 @@ from dbConfig.session import get_db
 import httpx
 import firebase_admin
 from firebase_admin import credentials, auth
+
+
+load_dotenv()
+USERS_SERVICE_URL = os.getenv("URL_USERS", "http://localhost:8001")
+
 MAX_FAILED_ATTEMPTS = 3
 LOCK_TIME = timedelta(minutes=0.3)
 
@@ -31,12 +38,12 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 
     try:
         user_id = uuid.uuid4()
-        user = Credential(id=user_id, email=data.email,
-                          hashed_password=hash_password(data.password))
+        user = Credential(id=user_id, email=data.email, hashed_password=hash_password(data.password))
         db.add(user)
         db.commit()
         db.refresh(user)
 
+   
         profile_data = {
             "id": str(user_id),
             "email": data.email,
@@ -46,21 +53,92 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "phone": data.phone,
         }
 
-        response = httpx.post(
-            "http://localhost:8001/users/profile", json=profile_data)
+
+        notify_user(db, data.email, data.phone, CHANNEL)
+      
+        response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
         response.raise_for_status()
 
     except httpx.HTTPStatusError as e:
         db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Error creating profile: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating profile: {str(e)}")
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return {"access_token": token}
+
+
+@router.post("/login", response_model=TokenResponse)
+def login(data: UserLogin, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == data.email).first()
+    buenos_aires_tz = pytz.timezone('America/Argentina/Buenos_Aires')
+    now = datetime.now(buenos_aires_tz)
+
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Email"
+        )
+
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=401,
+            detail="User not verified"
+        )
+
+
+    if user.lock_until and user.lock_until.tzinfo is None:
+        user.lock_until = buenos_aires_tz.localize(user.lock_until)
+
+   
+    if user.is_locked and user.lock_until and now > user.lock_until:
+        user.is_locked = False
+        user.failed_attempts = 0
+        user.lock_until = None
+        db.commit()
+
+
+    if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
+        user.is_locked = True
+        user.lock_until = now + LOCK_TIME
+        db.commit()
+        db.refresh(user)
+
+        lock_until_arg = user.lock_until.strftime('%Y-%m-%d %H:%M:%S')
+
+        raise HTTPException(
+            status_code=401,
+            detail=f"Too many failed attempts. Your account has been locked until {lock_until_arg} (Argentina Time)."
+        )
+
+
+    if not verify_password(data.password, user.hashed_password):
+        user.failed_attempts += 1
+        user.last_failed_login = now
+
+        if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
+            user.is_locked = True
+            user.lock_until = now + LOCK_TIME
+
+        db.commit()
+        db.refresh(user)
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid password"
+        )
+
+   
+    user.failed_attempts = 0
+    user.last_failed_login = None
+    user.is_locked = False
+    user.lock_until = None
+    db.commit()
+
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {"access_token": token}
+
 
 
 def verify_google_token(google_token: str) -> dict:
@@ -140,6 +218,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
     return {"access_token": token}
 
 
+
 @router.get("/protected")
 def protected_route(current_user=Depends(get_current_user)):
     if current_user["is_locked"]:
@@ -152,11 +231,23 @@ def protected_route(current_user=Depends(get_current_user)):
 
 @router.post("/verification")
 def verify_user(request: PinRequest, db: Session = Depends(get_db)):
-    verify_pin(db, request.email, request.pin)
+    user = db.query(Credential).filter(Credential.id == request.userId).first()
+    verify_pin(db, user.email, request.pin)
     return {"message": "User verified successfully"}
-
 
 @router.post("/notification")
 def notification_user(request: NotificationRequest, db: Session = Depends(get_db), ):
     notify_user(db, request.email, request.to, request.channel)
     return {"message": "Notification sent successfully"}
+
+@router.post("/verification/resend")
+def resend_pin(request: ResendRequest, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.id == request.userId).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="User already verified")
+    print(request.phone)
+    notify_user(db, user.email, request.phone, CHANNEL)
+    return {"message": "Verification code resent successfully"}
