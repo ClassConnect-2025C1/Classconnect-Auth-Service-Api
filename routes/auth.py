@@ -7,7 +7,7 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest,ResendRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
@@ -25,6 +25,7 @@ USERS_SERVICE_URL = os.getenv("URL_USERS", "http://localhost:8001")
 
 MAX_FAILED_ATTEMPTS = 3
 LOCK_TIME = timedelta(minutes=0.3)
+CHANNEL = "sms"
 
 cred = credentials.Certificate("firebaseKeys.json")
 firebase_admin.initialize_app(cred)
