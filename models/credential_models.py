@@ -19,11 +19,9 @@ class Credential(Base):
      last_failed_login = Column(DateTime, nullable=True)
      is_locked = Column(Boolean, default=False)
      lock_until = Column(DateTime, nullable=True)
-     is_verified = Column(Boolean, default=False)
+     is_verified = Column(Boolean, default=False)       
 
-    
- 
- 
+
 class VerificationPin(Base):
     __tablename__ = "verification_pins"
 
