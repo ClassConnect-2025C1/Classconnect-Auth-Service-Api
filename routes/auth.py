@@ -210,3 +210,15 @@ def verify_user(request: PinRequest, db: Session = Depends(get_db)):
 def notification_user(request: NotificationRequest, db: Session = Depends(get_db), ):
     notify_user(db, request.email, request.to, request.channel)
     return {"message": "Notification sent successfully"}
+
+@router.post("/verification/resend")
+def resend_pin(request: PinRequest, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="User already verified")
+
+    notify_user(db, user.email, user.phone, CHANNEL)
+    return {"message": "Verification code resent successfully"}
