@@ -15,7 +15,7 @@ import httpx
 from dotenv import load_dotenv
 import os
 load_dotenv()
-USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL", "http://localhost:8001")
+USERS_SERVICE_URL = os.getenv("URL_USERS", "http://localhost:8001")
 
 MAX_FAILED_ATTEMPTS = 3
 LOCK_TIME = timedelta(minutes=0.3)
