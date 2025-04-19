@@ -11,9 +11,10 @@ def send_notification(to: str, pin: str, channel: str):
         "body": pin,
         "channel": channel
     }
+    print(f"Sending notification to {to} via {channel} with body: {pin}")
     try:
         response = requests.post(NOTIFICATION_SERVICE_URL, json=payload)
-
+        print(f"Notification service response: {response.status_code}, {response.text}")
         if response.status_code == 200:
             return True
         elif response.status_code == 404:

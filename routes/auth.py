@@ -33,7 +33,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 
     try:
         user_id = uuid.uuid4()
-        user = Credential(id=user_id, email=data.email, hashed_password=hash_password(data.password))
+        user = Credential(id=user_id, email=data.email, hashed_password=hash_password(data.password), )
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -208,7 +208,8 @@ def protected_route(current_user=Depends(get_current_user)):
 
 @router.post("/verification")
 def verify_user(request: PinRequest, db: Session = Depends(get_db)):
-    verify_pin(db, request.email, request.pin)
+    user = db.query(Credential).filter(Credential.id == request.userId).first()
+    verify_pin(db, user.email, request.pin)
     return {"message": "User verified successfully"}
 
 @router.post("/notification")
@@ -218,7 +219,7 @@ def notification_user(request: NotificationRequest, db: Session = Depends(get_db
 
 @router.post("/verification/resend")
 def resend_pin(request: PinRequest, db: Session = Depends(get_db)):
-    user = db.query(Credential).filter(Credential.email == request.email).first()
+    user = db.query(Credential).filter(Credential.id == request.userId).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
