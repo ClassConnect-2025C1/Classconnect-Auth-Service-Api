@@ -19,6 +19,7 @@ USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL", "http://localhost:8001")
 
 MAX_FAILED_ATTEMPTS = 3
 LOCK_TIME = timedelta(minutes=0.3)
+CHANNEL = "sms"
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -47,6 +48,9 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "phone": data.phone,
         }
 
+
+        notify_user(db, data.email, data.phone, CHANNEL)
+      
         response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
         response.raise_for_status()
 
@@ -72,13 +76,12 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
             status_code=401,
             detail="Invalid Email"
         )
-    """ 
+
     if not user.is_verified:
         raise HTTPException(
             status_code=401,
             detail="User not verified"
         )
-    """
 
 
     if user.lock_until and user.lock_until.tzinfo is None:
@@ -212,3 +215,15 @@ def verify_user(request: PinRequest, db: Session = Depends(get_db)):
 def notification_user(request: NotificationRequest, db: Session = Depends(get_db), ):
     notify_user(db, request.email, request.to, request.channel)
     return {"message": "Notification sent successfully"}
+
+@router.post("/verification/resend")
+def resend_pin(request: PinRequest, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="User already verified")
+
+    notify_user(db, user.email, user.phone, CHANNEL)
+    return {"message": "Verification code resent successfully"}
