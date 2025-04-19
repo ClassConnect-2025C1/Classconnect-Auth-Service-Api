@@ -40,3 +40,7 @@ class NotificationRequest(BaseModel):
     email: str
     to: str
     channel: str
+
+class ResendRequest(BaseModel):
+    userId: str
+    phone: str

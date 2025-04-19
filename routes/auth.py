@@ -3,7 +3,7 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
@@ -33,7 +33,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
 
     try:
         user_id = uuid.uuid4()
-        user = Credential(id=user_id, email=data.email, hashed_password=hash_password(data.password), )
+        user = Credential(id=user_id, email=data.email, hashed_password=hash_password(data.password))
         db.add(user)
         db.commit()
         db.refresh(user)
@@ -218,13 +218,13 @@ def notification_user(request: NotificationRequest, db: Session = Depends(get_db
     return {"message": "Notification sent successfully"}
 
 @router.post("/verification/resend")
-def resend_pin(request: PinRequest, db: Session = Depends(get_db)):
+def resend_pin(request: ResendRequest, db: Session = Depends(get_db)):
     user = db.query(Credential).filter(Credential.id == request.userId).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     if user.is_verified:
         raise HTTPException(status_code=400, detail="User already verified")
-
-    notify_user(db, user.email, user.phone, CHANNEL)
+    print(request.phone)
+    notify_user(db, user.email, request.phone, CHANNEL)
     return {"message": "Verification code resent successfully"}
