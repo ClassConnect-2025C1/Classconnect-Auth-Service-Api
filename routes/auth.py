@@ -7,7 +7,7 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest,ResendRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
@@ -18,7 +18,8 @@ from dbConfig.session import get_db
 import httpx
 import firebase_admin
 from firebase_admin import credentials, auth
-
+from dotenv import load_dotenv
+import os
 
 load_dotenv()
 USERS_SERVICE_URL = os.getenv("URL_USERS", "http://localhost:8001")
@@ -183,6 +184,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
 
     if not user:
         try:
+
             # Si el usuario no existe, lo creamos
             user_id = uuid.uuid4()
             user = Credential(id=user_id, email=email, hashed_password=None)
@@ -201,8 +203,9 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
                 "photo_url": picture            
             }
 
-            response = httpx.post(
-                "http://localhost:8001/users/google_profile", json=profile_data)
+ 
+            response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
+
             response.raise_for_status()
 
         except httpx.HTTPStatusError as e:
