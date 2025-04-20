@@ -44,7 +44,6 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
-
    
         profile_data = {
             "id": str(user_id),
@@ -55,16 +54,17 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "phone": data.phone,
         }
 
-
         notify_user(db, data.email, data.phone, CHANNEL)
       
         response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
         response.raise_for_status()
 
     except httpx.HTTPStatusError as e:
+        print(f"Error sending notification: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating profile: {str(e)}")
     except Exception as e:
+        print(f"Unexpected error: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
