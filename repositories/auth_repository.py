@@ -29,7 +29,7 @@ def delete_verification_pin(db: Session, verification_pin: VerificationPin):
     db.commit()
 
 def set_new_pin(db: Session, user_email: str, new_pin: str):
-    pin_entry = db.query(VerificationPin).filter_by(email=user_email).first()
+    pin_entry = db.query(VerificationPin).filter(VerificationPin.email == user_email).first()
     if not pin_entry:
         raise
     
@@ -40,7 +40,7 @@ def set_new_pin(db: Session, user_email: str, new_pin: str):
     return pin_entry
 
 def set_pin_invalid(db: Session, user_email: str):
-    pin_entry = db.query(VerificationPin).filter_by(email=user_email).first()
+    pin_entry = db.query(VerificationPin).filter(VerificationPin.email == user_email).first()
     if not pin_entry:
         raise
     
