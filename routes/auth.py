@@ -54,13 +54,14 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
             "phone": data.phone,
         }
 
-        notify_user(db, data.email, data.phone, CHANNEL)
-      
+        if not notify_user(db, data.email, data.phone, CHANNEL):
+            raise HTTPException(status_code=500, detail="Error sending notification")
+
         response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
         response.raise_for_status()
 
     except httpx.HTTPStatusError as e:
-        print(f"Error sending notification: {e}")
+        print(f"Error creating profile: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error creating profile: {str(e)}")
     except Exception as e:
