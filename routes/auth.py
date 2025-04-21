@@ -205,7 +205,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
             }
 
  
-            response = httpx.post(f"{USERS_SERVICE_URL}/users/profile", json=profile_data)
+            response = httpx.post(f"{USERS_SERVICE_URL}/users/google_profile", json=profile_data)
 
             response.raise_for_status()
 

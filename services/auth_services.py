@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import random
 from externals.notify_service import send_notification
 
-PIN_EXPIRATION_SECONDS = 600
+PIN_EXPIRATION_SECONDS = 20
 
 def register_user(data: UserRegister, db: Session) -> TokenResponse:
     if get_user_by_email(db, data.email):
