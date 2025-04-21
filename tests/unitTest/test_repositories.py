@@ -152,16 +152,15 @@ def test_change_is_valid_to_false():
     mock_db = MagicMock()
     user_email = "tesEmail@test.com"
     pin = "123456"
-    
-    pin_entry = VerificationPin(email=user_email, pin=pin, is_valid=True)
-    
-    # Configuramos el mock para que devuelva esta entrada al hacer la query
-    mock_db.query.return_value.filter_by.return_value.first.return_value = pin_entry
 
-    # Ejecutamos la función
+    pin_entry = VerificationPin(email=user_email, pin=pin, is_valid=True)
+
+    mock_query = mock_db.query.return_value
+    mock_filter = mock_query.filter.return_value
+    mock_filter.first.return_value = pin_entry
+
     set_pin_invalid(mock_db, user_email)
 
-    # Aserciones
     assert pin_entry.is_valid is False
     mock_db.commit.assert_called_once()
     mock_db.refresh.assert_called_once_with(pin_entry)
