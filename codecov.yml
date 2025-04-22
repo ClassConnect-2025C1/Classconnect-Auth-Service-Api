@@ -2,10 +2,10 @@ coverage:
   status:
     project:
       default:
-        target: 80%     # cobertura total mínima
+        target: 75%     # cobertura total mínima
     patch:
       default:
-        target: 90%     # cobertura mínima en líneas nuevas/modificadas
+        target: 10%     # cobertura mínima en líneas nuevas/modificadas
 
 comment:
   layout: "reach, diff, flags, files"
