@@ -1,5 +1,6 @@
 [![codecov](https://codecov.io/gh/ClassConnect-2025C1/Classconnect-Auth-Service-Api/graph/badge.svg?token=ZOGrg23W6e)](https://codecov.io/gh/ClassConnect-2025C1/Classconnect-Auth-Service-Api)
 
+[![Python Package without Conda](https://github.com/ClassConnect-2025C1/Classconnect-Auth-Service-Api/actions/workflows/python-package-conda.yml/badge.svg)](https://github.com/ClassConnect-2025C1/Classconnect-Auth-Service-Api/actions/workflows/python-package-conda.yml)
 
 ## 📁 Estructura del proyecto
 
