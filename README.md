@@ -1,3 +1,6 @@
+[![codecov](https://codecov.io/gh/ClassConnect-2025C1/Classconnect-Auth-Service-Api/graph/badge.svg?token=ZOGrg23W6e)](https://codecov.io/gh/ClassConnect-2025C1/Classconnect-Auth-Service-Api)
+
+
 ## 📁 Estructura del proyecto
 
 Este proyecto sigue la arquitectura *package by layer*, donde cada carpeta agrupa archivos según su responsabilidad dentro del sistema. A continuación se detalla la estructura y propósito de cada componente:
