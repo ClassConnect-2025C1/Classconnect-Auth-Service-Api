@@ -1,12 +1,14 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
-from repositories.auth_repository import get_user_by_email, create_user, verify_user
+from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password
 from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin
+from repositories.auth_repository import set_recovery_link, get_recovery_link, delete_recovery_link
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
-from externals.notify_service import send_notification
+from externals.notify_service import send_notification, send_email_recovery
+import uuid
 
 PIN_EXPIRATION_SECONDS = 20
 
@@ -53,6 +55,28 @@ def notify_user(db: Session, user_email: str, to: str, channel: str):
         else:
             create_verification_pin(db, user_email, pin)
     return result
+
+def send_recovery_link(db: Session, user_email: str):
+    user = get_user_by_email(db, user_email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    recovery_uuid = str(uuid.uuid4())
+    result = send_email_recovery(user_email, recovery_uuid)
+    set_recovery_link(db, user.id, recovery_uuid)
+    return result
+
+def change_password(db: Session, uuid: str, new_password: str):
+    recovery_link = get_recovery_link(db, uuid)
+    if not recovery_link:
+        raise HTTPException(status_code=404, detail="Recovery link not found")
+    if recovery_link.created_at + timedelta(seconds=PIN_EXPIRATION_SECONDS) < datetime.now(timezone.utc):
+        delete_recovery_link(db, recovery_link)
+        raise HTTPException(status_code=410, detail="Recovery link expired")
+    user_id = recovery_link.user_id
+    hashed_password = hash_password(new_password)
+    update_user_password(db, user_id, hashed_password)
+    delete_verification_pin(db, recovery_link)
+    return True
 
 
 ########### UTILS ###########

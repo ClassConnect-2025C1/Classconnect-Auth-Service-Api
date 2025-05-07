@@ -7,13 +7,13 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
-from services.auth_services import verify_pin, notify_user
+from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password
 from dbConfig.session import get_db
 import httpx
 import firebase_admin
@@ -256,3 +256,13 @@ def resend_pin(request: ResendRequest, db: Session = Depends(get_db)):
     print(request.phone)
     notify_user(db, user.email, request.phone, CHANNEL)
     return {"message": "Verification code resent successfully"}
+
+@router.post("/recovery-password")
+def recovery_password(request: RecoveryRequest, db: Session = Depends(get_db)):
+    send_recovery_link(db, request.userEmail)
+    return {"message": "Recovery link sent successfully"}
+
+@router.post("/recovery-password/:uuid")
+def recovery_password(uuid: str, request: ChangePasswordRequest, db: Session = Depends(get_db)):
+    change_password(db, uuid, request.new_password)
+    return {"message": "Password changed successfully"}

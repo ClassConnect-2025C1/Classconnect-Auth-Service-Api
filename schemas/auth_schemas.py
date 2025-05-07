@@ -49,3 +49,9 @@ class NotificationRequest(BaseModel):
 class ResendRequest(BaseModel):
     userId: str
     phone: str
+
+class RecoveryRequest(BaseModel):
+    userEmail: str
+
+class ChangePasswordRequest(BaseModel):
+    new_password: str
