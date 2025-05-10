@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from utils.security import hash_password
-from models.credential_models import Credential, VerificationPin, RecoveryLink
+from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone
 
 def get_user_by_email(db: Session, email: str):
