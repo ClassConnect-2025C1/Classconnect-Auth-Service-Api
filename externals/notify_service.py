@@ -26,7 +26,7 @@ def send_notification(to: str, pin: str, channel: str):
         raise HTTPException(status_code=503, detail=f"Notification service unavailable: {str(e)}")
     
 
-def send_email_recovery(to_email: str, to_name: str, body: str):
+def send_email_recovery(to_email: str, body: str):
     email_service_url = prefix + "/notifications/recovery"
     payload = {
         "receiver_email": to_email,

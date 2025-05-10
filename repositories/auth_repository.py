@@ -57,31 +57,8 @@ def verify_user(db: Session, user_email: str):
     db.commit()
     db.refresh(user)
 
-def set_recovery_link(db: Session, user_id: str, recovery_uuid: str):
-    user = db.query(Credential).filter(Credential.id == user_id).first()
-    if not user:
-        recovery_link = RecoveryLink(user_id=user_id, recovery_link=recovery_uuid, created_at=datetime.now(timezone.utc))
-        db.add(recovery_link)
-        db.commit()
-        db.refresh(recovery_link)
-        return recovery_link
-    
-    recovery_link = db.query(RecoveryLink).filter(RecoveryLink.user_id == user_id).first()
-    recovery_link.recovery_link = recovery_uuid
-    recovery_link.created_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(recovery_link)
-    return recovery_link
-
-def get_recovery_link(db: Session, uuid: str):
-    return db.query(RecoveryLink).filter(RecoveryLink.recovery_link == uuid).first()
-
-def delete_recovery_link(db: Session, recovery_link: RecoveryLink):
-    db.delete(recovery_link)
-    db.commit()
-
-def update_user_password(db: Session, user_id: str, new_password: str):
-    user = db.query(Credential).filter(Credential.id == user_id).first()
+def update_user_password(db: Session, user_email: str, new_password: str):
+    user = db.query(Credential).filter(Credential.email == user_email).first()
     if not user:
         raise
     

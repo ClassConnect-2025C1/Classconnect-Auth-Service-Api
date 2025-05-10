@@ -55,3 +55,6 @@ class RecoveryRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     new_password: str
+
+class PinPasswordRequest(BaseModel):
+    pin: str

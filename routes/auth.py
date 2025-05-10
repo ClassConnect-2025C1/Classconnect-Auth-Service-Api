@@ -7,13 +7,13 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest, PinPasswordRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
-from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password
+from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password, verify_recovery_user_pin
 from dbConfig.session import get_db
 import httpx
 import firebase_admin
@@ -260,9 +260,14 @@ def resend_pin(request: ResendRequest, db: Session = Depends(get_db)):
 @router.post("/recovery-password")
 def recovery_password(request: RecoveryRequest, db: Session = Depends(get_db)):
     send_recovery_link(db, request.userEmail)
-    return {"message": "Recovery link sent successfully"}
+    return {"message": "Password recovery link sent successfully"}
 
-@router.post("/recovery-password/:uuid")
-def recovery_password(uuid: str, request: ChangePasswordRequest, db: Session = Depends(get_db)):
-    change_password(db, uuid, request.new_password)
+@router.patch("/recovery-password/{email}")
+def change_user_password(email: str, request: ChangePasswordRequest, db: Session = Depends(get_db)):
+    change_password(db, email, request.new_password)
     return {"message": "Password changed successfully"}
+
+@router.post("/recovery-password/{email}")
+def verify_recovery_pin(email: str, request: PinPasswordRequest, db: Session = Depends(get_db)):
+    verify_recovery_user_pin(db, email, request.pin)
+    return {"message": "Pin verified successfully"}

@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
 from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password
 from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin
-from repositories.auth_repository import set_recovery_link, get_recovery_link, delete_recovery_link
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
@@ -38,6 +37,7 @@ def verify_pin(db: Session, user_email: str, pin: str):
 
     assert_pin_is_not_correct(db, user_email, pin, verification_pin)
     assert_pin_not_expired(db, user_email, verification_pin)
+    assert_pin_not_valid(verification_pin)
     
     delete_verification_pin(db, verification_pin)
     make_user_verified(db, user_email)
@@ -60,23 +60,42 @@ def send_recovery_link(db: Session, user_email: str):
     user = get_user_by_email(db, user_email)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    recovery_uuid = str(uuid.uuid4())
-    result = send_email_recovery(user_email, recovery_uuid)
-    set_recovery_link(db, user.id, recovery_uuid)
-    return result
+    pin = create_pin()
+    result = send_email_recovery(user_email, pin)
+    if result:
+        if get_verification_pin(db, user_email):
+            set_new_pin(db, user_email, pin)
+        else:
+            create_verification_pin(db, user_email, pin)
+    return user.id, user.email
 
-def change_password(db: Session, uuid: str, new_password: str):
-    recovery_link = get_recovery_link(db, uuid)
-    if not recovery_link:
-        raise HTTPException(status_code=404, detail="Recovery link not found")
-    if recovery_link.created_at + timedelta(seconds=PIN_EXPIRATION_SECONDS) < datetime.now(timezone.utc):
-        delete_recovery_link(db, recovery_link)
-        raise HTTPException(status_code=410, detail="Recovery link expired")
-    user_id = recovery_link.user_id
+def verify_recovery_pin(db: Session, user_email: str, pin: str):
+    verification_pin = get_verification_pin(db, user_email)
+    if not verification_pin:
+        raise HTTPException(status_code=404, detail="Verification pin not found")
+    
+    assert_pin_is_not_correct(db, user_email, pin, verification_pin)
+    assert_pin_not_expired(db, user_email, verification_pin)
+    assert_pin_not_valid(verification_pin)
+    return True
+
+def change_password(db: Session, user_email: str, new_password: str):
+    recovery_link = get_verification_pin(db, user_email)
     hashed_password = hash_password(new_password)
-    update_user_password(db, user_id, hashed_password)
+    update_user_password(db, user_email, hashed_password)
     delete_verification_pin(db, recovery_link)
     return True
+
+def verify_recovery_user_pin(db: Session, user_email: str, pin: str):
+    verification_pin = get_verification_pin(db, user_email)
+    if not verification_pin:
+        raise HTTPException(status_code=404, detail="Verification pin not found")
+    
+    assert_pin_is_not_correct(db, user_email, pin, verification_pin)
+    assert_pin_not_expired(db, user_email, verification_pin)
+    assert_pin_not_valid(verification_pin)
+    return True
+
 
 
 ########### UTILS ###########
@@ -106,6 +125,10 @@ def assert_pin_not_expired(db, user_email, verification_pin):
     if verification_pin.created_at + timedelta(seconds=PIN_EXPIRATION_SECONDS) < date_now:
         make_invalid_pin(db, user_email)
         raise HTTPException(status_code=410, detail="Verification pin expired")
+    
+def assert_pin_not_valid(verification_pin):
+    if not verification_pin.is_valid:
+        raise HTTPException(status_code=401, detail="Invalid verification pin")
     
 def create_pin():
     # This function should create a new pin and return it

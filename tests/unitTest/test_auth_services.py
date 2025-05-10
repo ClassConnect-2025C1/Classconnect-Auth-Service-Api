@@ -6,7 +6,7 @@ import pytest
 from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone, timedelta
 from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_SECONDS, assert_user_already_verified
-from services.auth_services import create_pin, notify_user
+from services.auth_services import create_pin, notify_user, verify_recovery_pin, verify_recovery_user_pin, change_password
 
 def test_login_user_unverified_should_raise_exception():
     # Arrange
@@ -87,7 +87,7 @@ def test_succes_verification_return_true():
     correct_pin = "0123456789"
     created_time = datetime.now(timezone.utc)
 
-    valid_pin = VerificationPin(email=user_email, pin=correct_pin, created_at=created_time)
+    valid_pin = VerificationPin(email=user_email, pin=correct_pin, created_at=created_time, is_valid=True)
 
     with patch("services.auth_services.assert_user_already_verified", return_value=None), \
         patch("services.auth_services.get_verification_pin", return_value=valid_pin):
@@ -152,7 +152,7 @@ def test_success_verification_delete_pin_from_db():
     correct_pin = "0123456789"
     created_time = datetime.now(timezone.utc)
 
-    valid_pin = VerificationPin(email=user_email, pin=correct_pin, created_at=created_time)
+    valid_pin = VerificationPin(email=user_email, pin=correct_pin, created_at=created_time, is_valid=True)
 
     with patch("services.auth_services.assert_user_already_verified", return_value=None), \
         patch("services.auth_services.get_verification_pin", return_value=valid_pin), \
@@ -205,3 +205,137 @@ def test_success_to_send_notification_create_db_entry():
         mock_create_entry.assert_called_once_with(mock_db, user_email, pin)
         assert result is True
 
+def test_verify_recovery_pin_not_found_should_raise_404():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+
+    with patch("services.auth_services.get_verification_pin", return_value=None):
+        with pytest.raises(HTTPException) as exc:
+            verify_recovery_pin(mock_db, user_email, pin)
+
+        assert exc.value.status_code == 404
+        assert exc.value.detail == "Verification pin not found"
+
+def test_verify_recovery_pin_invalid_should_raise_401():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+    verification_pin = VerificationPin(email=user_email, pin="654321", created_at=datetime.now(timezone.utc))
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.assert_pin_is_not_correct") as mock_assert_pin:
+        mock_assert_pin.side_effect = HTTPException(status_code=401, detail="Invalid verification pin")
+
+        with pytest.raises(HTTPException) as exc:
+            verify_recovery_pin(mock_db, user_email, pin)
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == "Invalid verification pin"
+
+def test_verify_recovery_pin_expired_should_raise_410():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+    expired_time = datetime.now(timezone.utc) - timedelta(minutes=15)
+    verification_pin = VerificationPin(email=user_email, pin=pin, created_at=expired_time)
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.assert_pin_not_expired") as mock_assert_expired:
+        mock_assert_expired.side_effect = HTTPException(status_code=410, detail="Verification pin expired")
+
+        with pytest.raises(HTTPException) as exc:
+            verify_recovery_pin(mock_db, user_email, pin)
+
+        assert exc.value.status_code == 410
+        assert exc.value.detail == "Verification pin expired"
+
+def test_verify_recovery_pin_success():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+    verification_pin = VerificationPin(email=user_email, pin=pin, created_at=datetime.now(timezone.utc), is_valid=True)
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.assert_pin_is_not_correct"), \
+        patch("services.auth_services.assert_pin_not_expired"), \
+        patch("services.auth_services.assert_pin_not_valid"):
+        result = verify_recovery_pin(mock_db, user_email, pin)
+
+        assert result is True
+
+def test_change_password_success():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    new_password = "newSecurePassword"
+    verification_pin = VerificationPin(email=user_email, pin="123456", created_at=datetime.now(timezone.utc))
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.hash_password", return_value="hashedPassword") as mock_hash, \
+        patch("services.auth_services.update_user_password") as mock_update, \
+        patch("services.auth_services.delete_verification_pin") as mock_delete:
+        result = change_password(mock_db, user_email, new_password)
+
+        mock_hash.assert_called_once_with(new_password)
+        mock_update.assert_called_once_with(mock_db, user_email, "hashedPassword")
+        mock_delete.assert_called_once_with(mock_db, verification_pin)
+        assert result is True
+
+def test_verify_recovery_user_pin_not_found_should_raise_404():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+
+    with patch("services.auth_services.get_verification_pin", return_value=None):
+        with pytest.raises(HTTPException) as exc:
+            verify_recovery_user_pin(mock_db, user_email, pin)
+
+        assert exc.value.status_code == 404
+        assert exc.value.detail == "Verification pin not found"
+
+def test_verify_recovery_user_pin_invalid_should_raise_401():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+    verification_pin = VerificationPin(email=user_email, pin="654321", created_at=datetime.now(timezone.utc))
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.assert_pin_is_not_correct") as mock_assert_pin:
+        mock_assert_pin.side_effect = HTTPException(status_code=401, detail="Invalid verification pin")
+
+        with pytest.raises(HTTPException) as exc:
+            verify_recovery_user_pin(mock_db, user_email, pin)
+
+        assert exc.value.status_code == 401
+        assert exc.value.detail == "Invalid verification pin"
+
+def test_verify_recovery_user_pin_expired_should_raise_410():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+    expired_time = datetime.now(timezone.utc) - timedelta(minutes=15)
+    verification_pin = VerificationPin(email=user_email, pin=pin, created_at=expired_time)
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.assert_pin_not_expired") as mock_assert_expired:
+        mock_assert_expired.side_effect = HTTPException(status_code=410, detail="Verification pin expired")
+
+        with pytest.raises(HTTPException) as exc:
+            verify_recovery_user_pin(mock_db, user_email, pin)
+
+        assert exc.value.status_code == 410
+        assert exc.value.detail == "Verification pin expired"
+
+def test_verify_recovery_user_pin_success():
+    mock_db = MagicMock()
+    user_email = "testEmail@test.com"
+    pin = "123456"
+    verification_pin = VerificationPin(email=user_email, pin=pin, created_at=datetime.now(timezone.utc), is_valid=True)
+
+    with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
+        patch("services.auth_services.assert_pin_is_not_correct"), \
+        patch("services.auth_services.assert_pin_not_expired"), \
+        patch("services.auth_services.assert_pin_not_valid"):
+        result = verify_recovery_user_pin(mock_db, user_email, pin)
+
+        assert result is True
