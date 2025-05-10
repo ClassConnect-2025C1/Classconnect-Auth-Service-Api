@@ -29,11 +29,3 @@ class VerificationPin(Base):
     pin = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
     is_valid = Column(Boolean, default=True)
-
-class RecoveryLink(Base):
-     __tablename__ = "recovery_links"
-     
-     id = Column(UUID(as_uuid=True), primary_key=True)
-     user_id = Column(UUID(as_uuid=True), nullable=False)
-     recovery_link = Column(UUID(as_uuid=True), nullable=False)
-     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
