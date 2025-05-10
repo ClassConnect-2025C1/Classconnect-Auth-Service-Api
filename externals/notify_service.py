@@ -7,9 +7,9 @@ NOTIFICATION_SERVICE_URL = prefix +"/notifications"
 
 def send_notification(to: str, pin: str, channel: str):
     payload = {
-        "to": to,
-        "body": pin,
-        "channel": channel
+        "To": to,
+        "Body": pin,
+        "Channel": channel
     }
     print(f"Sending notification to {to} via {channel} with body: {pin}")
     try:

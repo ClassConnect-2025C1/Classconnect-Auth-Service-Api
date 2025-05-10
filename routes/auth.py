@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
 import pytz
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, requests, status
+from fastapi import APIRouter, Depends, HTTPException, requests, status, Query
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest, PinPasswordRequest
 from dbConfig.session import get_db
@@ -262,12 +262,12 @@ def recovery_password(request: RecoveryRequest, db: Session = Depends(get_db)):
     send_recovery_link(db, request.userEmail)
     return {"message": "Password recovery link sent successfully"}
 
-@router.post("/recovery-password/{email}")
-def verify_recovery_pin(email: str, request: PinPasswordRequest, db: Session = Depends(get_db)):
+@router.post("/recovery-password/by-email")
+def verify_recovery_pin(request: PinPasswordRequest, email: str = Query(...), db: Session = Depends(get_db)):
     verify_recovery_user_pin(db, email, request.pin)
     return {"message": "Pin verified successfully"}
 
-@router.patch("/recovery-password/{email}")
-def change_user_password(email: str, request: ChangePasswordRequest, db: Session = Depends(get_db)):
+@router.patch("/recovery-password/by-email")
+def change_user_password(request: ChangePasswordRequest, email: str = Query(...), db: Session = Depends(get_db)):
     change_password(db, email, request.new_password)
     return {"message": "Password changed successfully"}
