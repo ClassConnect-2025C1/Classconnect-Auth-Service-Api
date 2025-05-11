@@ -6,7 +6,7 @@ import pytest
 from models.credential_models import Credential, VerificationPin
 from datetime import datetime, timezone, timedelta
 from services.auth_services import login_user, verify_pin, PIN_EXPIRATION_SECONDS, assert_user_already_verified
-from services.auth_services import create_pin, notify_user, verify_recovery_pin, verify_recovery_user_pin, change_password
+from services.auth_services import create_pin, notify_user, verify_recovery_user_pin, change_password
 
 def test_login_user_unverified_should_raise_exception():
     # Arrange
