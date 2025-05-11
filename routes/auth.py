@@ -5,15 +5,15 @@ from fastapi import HTTPException, status
 from datetime import datetime, timedelta, timezone
 import pytz
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, requests, status
+from fastapi import APIRouter, Depends, HTTPException, requests, status, Query
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest, PinPasswordRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
-from services.auth_services import verify_pin, notify_user
+from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password, verify_recovery_user_pin
 from dbConfig.session import get_db
 import httpx
 import firebase_admin
@@ -256,3 +256,18 @@ def resend_pin(request: ResendRequest, db: Session = Depends(get_db)):
     print(request.phone)
     notify_user(db, user.email, request.phone, CHANNEL)
     return {"message": "Verification code resent successfully"}
+
+@router.post("/recovery-password")
+def recovery_password(request: RecoveryRequest, db: Session = Depends(get_db)):
+    send_recovery_link(db, request.userEmail)
+    return {"message": "Password recovery link sent successfully"}
+
+@router.post("/recovery-password/by-email")
+def verify_recovery_pin(request: PinPasswordRequest, email: str = Query(...), db: Session = Depends(get_db)):
+    verify_recovery_user_pin(db, email, request.pin)
+    return {"message": "Pin verified successfully"}
+
+@router.patch("/recovery-password/by-email")
+def change_user_password(request: ChangePasswordRequest, email: str = Query(...), db: Session = Depends(get_db)):
+    change_password(db, email, request.new_password)
+    return {"message": "Password changed successfully"}

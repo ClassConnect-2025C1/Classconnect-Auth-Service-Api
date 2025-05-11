@@ -19,7 +19,7 @@ class Credential(Base):
      last_failed_login = Column(DateTime, nullable=True)
      is_locked = Column(Boolean, default=False)
      lock_until = Column(DateTime, nullable=True)
-     is_verified = Column(Boolean, default=False)       
+     is_verified = Column(Boolean, default=False)
 
 
 class VerificationPin(Base):
@@ -29,3 +29,5 @@ class VerificationPin(Base):
     pin = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.now(timezone.utc))
     is_valid = Column(Boolean, default=True)
+    can_change = Column(Boolean, default=False)
+    for_password_recovery = Column(Boolean, default=False)
