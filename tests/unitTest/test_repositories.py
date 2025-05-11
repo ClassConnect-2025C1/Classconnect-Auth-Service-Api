@@ -80,7 +80,7 @@ def test_create_verification_pin_returns_model():
     user_email = "tesEmail@test.com"
     pin = "123456"
 
-    result = create_verification_pin(mock_db, user_email, pin)
+    result = create_verification_pin(mock_db, user_email, pin, False)
 
     assert isinstance(result, VerificationPin)
     assert result.email == user_email
@@ -95,7 +95,7 @@ def test_create_verification_pin_sets_recent_timestamp():
 
     before = datetime.now(timezone.utc)
 
-    result = create_verification_pin(mock_db, user_id, pin)
+    result = create_verification_pin(mock_db, user_id, pin, False)
 
     after = datetime.now(timezone.utc)
 
@@ -143,7 +143,7 @@ def test_created_pin_is_valid():
     user_id = "13456"
     pin = "123456"
 
-    result = create_verification_pin(mock_db, user_id, pin)
+    result = create_verification_pin(mock_db, user_id, pin, False)
 
     # Asegura que el tiempo de creación esté entre `before` y `after`
     assert result.is_valid is True

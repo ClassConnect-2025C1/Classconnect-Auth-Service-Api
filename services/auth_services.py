@@ -41,9 +41,8 @@ def verify_pin(db: Session, user_email: str, pin: str):
     assert_pin_not_for_recovery(verification_pin)
     
     delete_verification_pin(db, verification_pin)
-    make_user_verified(db, user_email, verification_pin)
+    make_user_verified(db, user_email)
     return True
-
 
 
 def notify_user(db: Session, user_email: str, to: str, channel: str):
@@ -94,12 +93,11 @@ def verify_recovery_user_pin(db: Session, user_email: str, pin: str):
     
     assert_pin_is_correct(db, user_email, pin, verification_pin)
     assert_pin_not_expired(db, user_email, verification_pin)
-    assert_pin_is_valid(db, user_email, verification_pin)
+    assert_pin_is_valid(verification_pin)
     assert_pin_for_recovery(db, user_email, verification_pin)
 
     pin_can_change(db, verification_pin)
     return True
-
 
 
 ########### UTILS ###########
@@ -130,19 +128,23 @@ def assert_pin_not_expired(db, user_email, verification_pin):
         make_invalid_pin(db, user_email)
         raise HTTPException(status_code=410, detail="Verification pin expired")
     
+        
 def assert_pin_is_valid(verification_pin):
     if not verification_pin.is_valid:
         raise HTTPException(status_code=410, detail="Invalid verification pin")
+    
+def assert_pin_for_recovery(db, user_email, verification_pin):
+    if not verification_pin.for_password_recovery:
+        make_invalid_pin(db, user_email)
+        raise HTTPException(status_code=403, detail="Pin is not for password recovery")
+
     
 def assert_pin_not_for_recovery(db, user_email, verification_pin):
     if verification_pin.for_password_recovery:
         make_invalid_pin(db, user_email)
         raise HTTPException(status_code=403, detail="Pin is for password recovery")
     
-def assert_pin_for_recovery(db, user_email, verification_pin):
-    if not verification_pin.for_password_recovery:
-        make_invalid_pin(db, user_email)
-        raise HTTPException(status_code=403, detail="Pin is not for password recovery")
+
     
 def assert_pin_can_change(recovery_link):
     if recovery_link.can_change == False:
