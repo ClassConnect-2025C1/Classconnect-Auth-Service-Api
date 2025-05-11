@@ -54,7 +54,9 @@ class RecoveryRequest(BaseModel):
     userEmail: str
 
 class ChangePasswordRequest(BaseModel):
+    userEmail: str
     new_password: str
 
 class PinPasswordRequest(BaseModel):
+    userEmail: str
     pin: str

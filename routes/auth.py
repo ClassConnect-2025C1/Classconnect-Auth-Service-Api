@@ -262,12 +262,12 @@ def recovery_password(request: RecoveryRequest, db: Session = Depends(get_db)):
     send_recovery_link(db, request.userEmail)
     return {"message": "Password recovery link sent successfully"}
 
-@router.post("/recovery-password/by-email")
-def verify_recovery_pin(request: PinPasswordRequest, email: str = Query(...), db: Session = Depends(get_db)):
-    verify_recovery_user_pin(db, email, request.pin)
+@router.post("/recovery-password/verify-pin")
+def verify_recovery_pin(request: PinPasswordRequest, db: Session = Depends(get_db)):
+    verify_recovery_user_pin(db, request.userEmail, request.pin)
     return {"message": "Pin verified successfully"}
 
-@router.patch("/recovery-password/by-email")
-def change_user_password(request: ChangePasswordRequest, email: str = Query(...), db: Session = Depends(get_db)):
-    change_password(db, email, request.new_password)
+@router.patch("/recovery-password/change-password")
+def change_user_password(request: ChangePasswordRequest, db: Session = Depends(get_db)):
+    change_password(db, request.userEmail, request.new_password)
     return {"message": "Password changed successfully"}
