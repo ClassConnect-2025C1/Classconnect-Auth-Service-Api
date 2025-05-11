@@ -38,7 +38,7 @@ def verify_pin(db: Session, user_email: str, pin: str):
     assert_pin_is_correct(db, user_email, pin, verification_pin)
     assert_pin_not_expired(db, user_email, verification_pin)
     assert_pin_is_valid(verification_pin)
-    assert_pin_not_for_recovery(verification_pin)
+    assert_pin_not_for_recovery(db, user_email, verification_pin)
     
     delete_verification_pin(db, verification_pin)
     make_user_verified(db, user_email)
