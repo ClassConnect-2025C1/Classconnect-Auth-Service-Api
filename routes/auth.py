@@ -69,7 +69,7 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
-    token = create_access_token({"sub": str(user.id), "email": user.email})
+    token = create_access_token({"user_id": str(user.id), "email": user.email})
     return {"access_token": token}
 
 
@@ -139,7 +139,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     user.lock_until = None
     db.commit()
 
-    token = create_access_token({"sub": str(user.id), "email": user.email})
+    token = create_access_token({"user_id": str(user.id), "email": user.email})
     return {"access_token": token}
 
 
@@ -219,7 +219,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
                 status_code=500, detail=f"Unexpected error: {str(e)}")
 
     # Paso 5: Generamos el token JWT y lo devolvemos
-    token = create_access_token({"sub": str(user.id), "email": user.email})
+    token = create_access_token({"user_id": str(user.id), "email": user.email})
     return {"access_token": token}
 
 

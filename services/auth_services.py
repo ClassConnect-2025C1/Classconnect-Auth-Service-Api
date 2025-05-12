@@ -16,7 +16,7 @@ def register_user(data: UserRegister, db: Session) -> TokenResponse:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     user = create_user(db, data.email, data.password)
-    token = create_access_token({"sub": user.email})
+    token = create_access_token({"user_email": user.email, "user_id": str(user.id)})
     return TokenResponse(access_token=token)
 
 def login_user(data: UserLogin, db: Session) -> TokenResponse:
@@ -26,7 +26,7 @@ def login_user(data: UserLogin, db: Session) -> TokenResponse:
     
     assert_user_not_verified(user)
 
-    token = create_access_token({"sub": user.email, "current_user_id": str(user.id)})
+    token = create_access_token({"user_email": user.email, "user_id": str(user.id)})
     return TokenResponse(access_token=token)
 
     
