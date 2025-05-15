@@ -11,7 +11,6 @@ text_recovery_template = (
     "Si no fuiste vos, podés ignorar este mensaje. Tu contraseña no se cambiará."
 )
 html_recovery_template = (
-    'Content-Type: text/html; charset="UTF-8"\n\n'
     '<p>Recibiste este correo porque se solicitó un cambio de contraseña para tu cuenta.</p>\n'
     '<p>Si fuiste vos, utiliza este PIN para reestablecerla:</p>\n'
     '<p style="font-weight: bold; color: #1a73e8;">{}</p>\n'
