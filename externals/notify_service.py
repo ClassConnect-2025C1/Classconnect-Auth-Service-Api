@@ -40,7 +40,7 @@ def send_notification(to: str, pin: str, channel: str):
     
 
 def send_email_recovery(to_email: str, body: str):
-    email_service_url = prefix + "/notifications/recovery"
+    email_service_url = prefix + "/notifications/email"
     payload = {
         "receiver_email": to_email,
         "subject": "ClassConnect Password Recovery",
