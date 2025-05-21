@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
-from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password
+from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password, increase_incorrect_attempts
 from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin, pin_can_change
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
@@ -10,6 +10,7 @@ from externals.notify_service import send_notification, send_email_recovery
 import uuid
 
 PIN_EXPIRATION_SECONDS = 20
+MAX_INCORRECT_ATTEMPTS = 3
 
 def register_user(data: UserRegister, db: Session) -> TokenResponse:
     if get_user_by_email(db, data.email):
@@ -127,7 +128,16 @@ def assert_pin_not_expired(db, user_email, verification_pin):
     if verification_pin.created_at + timedelta(seconds=PIN_EXPIRATION_SECONDS) < date_now:
         make_invalid_pin(db, user_email)
         raise HTTPException(status_code=410, detail="Verification pin expired")
-    
+
+def assert_recovery_pin_is_correct(db, user_email, pin, verification_pin):
+    if verification_pin.pin != pin:
+        if verification_pin.incorrect_attempts < MAX_INCORRECT_ATTEMPTS:
+            increase_incorrect_attempts(db, user_email)
+            raise HTTPException(status_code=401, detail="Verification pin is not correct, try again")
+        else:
+            make_invalid_pin(db, user_email)
+            raise HTTPException(status_code=401, detail="Invalid verification pin")
+
         
 def assert_pin_is_valid(verification_pin):
     if not verification_pin.is_valid:
