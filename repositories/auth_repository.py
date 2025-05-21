@@ -75,3 +75,13 @@ def pin_can_change(db: Session, verification_pin: VerificationPin):
     db.commit()
     db.refresh(verification_pin)
     return verification_pin
+
+def increase_incorrect_attempts(db: Session, user_email: str):
+    pin_entry = db.query(VerificationPin).filter(VerificationPin.email == user_email).first()
+    if not pin_entry:
+        raise
+    
+    pin_entry.incorrect_attempts += 1
+    db.commit()
+    db.refresh(pin_entry)
+    return pin_entry
