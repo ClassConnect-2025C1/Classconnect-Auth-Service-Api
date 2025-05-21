@@ -31,3 +31,4 @@ class VerificationPin(Base):
     is_valid = Column(Boolean, default=True)
     can_change = Column(Boolean, default=False)
     for_password_recovery = Column(Boolean, default=False)
+    max_incorrect_attempts = Column(Integer, default=3)
