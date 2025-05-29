@@ -9,7 +9,7 @@ import random
 from externals.notify_service import send_notification, send_email_recovery
 import uuid
 
-PIN_EXPIRATION_SECONDS = 20
+PIN_EXPIRATION_SECONDS = 60
 MAX_INCORRECT_ATTEMPTS = 3
 
 def register_user(data: UserRegister, db: Session) -> TokenResponse:
@@ -92,7 +92,7 @@ def verify_recovery_user_pin(db: Session, user_email: str, pin: str):
     if not verification_pin:
         raise HTTPException(status_code=404, detail="Verification pin not found")
     
-    assert_pin_is_correct(db, user_email, pin, verification_pin)
+    assert_recovery_pin_is_correct(db, user_email, pin, verification_pin)
     assert_pin_not_expired(db, user_email, verification_pin)
     assert_pin_is_valid(verification_pin)
     assert_pin_for_recovery(db, user_email, verification_pin)
