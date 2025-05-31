@@ -308,7 +308,8 @@ def test_verify_recovery_user_pin_invalid_should_raise_401():
     mock_db = MagicMock()
     user_email = "testEmail@test.com"
     pin = "123456"
-    verification_pin = VerificationPin(email=user_email, pin="654321", created_at=datetime.now(timezone.utc))
+    error_attemps = 3
+    verification_pin = VerificationPin(email=user_email, pin="654321", created_at=datetime.now(timezone.utc), incorrect_attempts=error_attemps)
 
     with patch("services.auth_services.get_verification_pin", return_value=verification_pin), \
         patch("services.auth_services.make_invalid_pin") as mock_make_invalid:
