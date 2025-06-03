@@ -139,7 +139,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     user.lock_until = None
     db.commit()
 
-    token = create_access_token({"user_id": str(user.id), "email": user.email})
+    token = create_access_token({"user_id": str(user.id), "user_email": user.email})
     return {"access_token": token}
 
 
