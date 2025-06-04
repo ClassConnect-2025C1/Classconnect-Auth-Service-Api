@@ -1,16 +1,18 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
-from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password, increase_incorrect_attempts
+from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password, increase_incorrect_attempts, get_user_by_id, block_user, unblock_user
 from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin, pin_can_change
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
 from externals.notify_service import send_notification, send_email_recovery
+from externals.user_service import get_user_data, update_user_data
 import uuid
 
 PIN_EXPIRATION_SECONDS = 60
 MAX_INCORRECT_ATTEMPTS = 3
+POSSIBLE_ROLES = ["student", "teacher"]
 
 def register_user(data: UserRegister, db: Session) -> TokenResponse:
     if get_user_by_email(db, data.email):
@@ -100,6 +102,32 @@ def verify_recovery_user_pin(db: Session, user_email: str, pin: str):
     pin_can_change(db, verification_pin)
     return True
 
+def block_user_service(db: Session, user_id: str, block: bool):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if block:
+        block_user(db, user)
+    else:
+        unblock_user(db, user)
+    return True
+
+def change_user_role_service(db: Session, user_id: str, new_role: str):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if new_role not in POSSIBLE_ROLES:
+        raise HTTPException(status_code=400, detail="Invalid role")
+
+    user_data = get_user_data(user_id)
+    user_data["role"] = new_role
+    user_data["bio"] = user_data.get("bio") or ""
+    user_data["location"] = user_data.get("location") or ""
+    update_user_data(user_id, user_data)
+    
+    return {"message": f"User {user_id} role changed to {new_role} successfully"}
 
 ########### UTILS ###########
 
