@@ -1,10 +1,13 @@
 from sqlalchemy.orm import Session
 from utils.security import hash_password
 from models.credential_models import Credential, VerificationPin
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 def get_user_by_email(db: Session, email: str):
     return db.query(Credential).filter(Credential.email == email).first()
+
+def get_user_by_id(db: Session, user_id: str):
+    return db.query(Credential).filter(Credential.id == user_id).first()
 
 def create_user(db: Session, email: str, password: str):
     user = Credential(email=email, hashed_password=hash_password(password), is_verified=False)
@@ -75,3 +78,28 @@ def pin_can_change(db: Session, verification_pin: VerificationPin):
     db.commit()
     db.refresh(verification_pin)
     return verification_pin
+
+def increase_incorrect_attempts(db: Session, user_email: str):
+    pin_entry = db.query(VerificationPin).filter(VerificationPin.email == user_email).first()
+    if not pin_entry:
+        raise
+    
+    pin_entry.incorrect_attempts += 1
+    db.commit()
+    db.refresh(pin_entry)
+    return pin_entry
+
+def block_user(db: Session, user: Credential):
+    user.is_locked = True
+    user.lock_until = datetime.now(timezone.utc) + timedelta(weeks=260)  # 5 years
+    db.commit()
+    db.refresh(user)
+    return user
+
+def unblock_user(db: Session, user: Credential):
+    user.is_locked = False
+    user.lock_until = None
+    user.failed_attempts = 0
+    db.commit()
+    db.refresh(user)
+    return user

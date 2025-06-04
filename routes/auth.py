@@ -7,13 +7,14 @@ import pytz
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, requests, status, Query
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest, PinPasswordRequest
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, BlockUserRequest, ChangeRoleRequest
+from schemas.auth_schemas import PinRequest, NotificationRequest, ResendRequest, RecoveryRequest, ChangePasswordRequest, PinPasswordRequest
 from dbConfig.session import get_db
 from models.credential_models import Credential
 from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
-from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password, verify_recovery_user_pin
+from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password, verify_recovery_user_pin, block_user_service, change_user_role_service
 from dbConfig.session import get_db
 import httpx
 import firebase_admin
@@ -271,3 +272,16 @@ def verify_recovery_pin(request: PinPasswordRequest, db: Session = Depends(get_d
 def change_user_password(request: ChangePasswordRequest, db: Session = Depends(get_db)):
     change_password(db, request.userEmail, request.new_password)
     return {"message": "Password changed successfully"}
+<<<<<<< HEAD
+
+@router.patch("/block/{user_id}")
+def block_user(user_id: str, request: BlockUserRequest,db: Session = Depends(get_db)):
+    block_user_service(db, user_id, request.block)
+    return {"message": f"User {user_id} {'blocked' if request.block else 'unblocked'} successfully"}
+
+@router.patch("/rol/{user_id}")
+def change_user_role(user_id: str, request: ChangeRoleRequest, db: Session = Depends(get_db)):
+    change_user_role_service(db, user_id, request.role)
+    return {"message": f"User {user_id} role changed to {request.role} successfully"}
+=======
+>>>>>>> origin/main
