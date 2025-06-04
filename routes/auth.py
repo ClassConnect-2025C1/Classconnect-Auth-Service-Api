@@ -140,7 +140,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
     user.lock_until = None
     db.commit()
 
-    token = create_access_token({"user_id": str(user.id), "email": user.email})
+    token = create_access_token({"user_id": str(user.id), "user_email": user.email})
     return {"access_token": token}
 
 
@@ -220,7 +220,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
                 status_code=500, detail=f"Unexpected error: {str(e)}")
 
     # Paso 5: Generamos el token JWT y lo devolvemos
-    token = create_access_token({"user_id": str(user.id), "email": user.email})
+    token = create_access_token({"user_id": str(user.id), "user_email": user.email})
     return {"access_token": token}
 
 
@@ -272,6 +272,7 @@ def verify_recovery_pin(request: PinPasswordRequest, db: Session = Depends(get_d
 def change_user_password(request: ChangePasswordRequest, db: Session = Depends(get_db)):
     change_password(db, request.userEmail, request.new_password)
     return {"message": "Password changed successfully"}
+<<<<<<< HEAD
 
 @router.patch("/block/{user_id}")
 def block_user(user_id: str, request: BlockUserRequest,db: Session = Depends(get_db)):
@@ -282,3 +283,5 @@ def block_user(user_id: str, request: BlockUserRequest,db: Session = Depends(get
 def change_user_role(user_id: str, request: ChangeRoleRequest, db: Session = Depends(get_db)):
     change_user_role_service(db, user_id, request.role)
     return {"message": f"User {user_id} role changed to {request.role} successfully"}
+=======
+>>>>>>> origin/main
