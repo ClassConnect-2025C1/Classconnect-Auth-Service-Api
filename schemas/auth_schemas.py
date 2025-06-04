@@ -60,3 +60,9 @@ class ChangePasswordRequest(BaseModel):
 class PinPasswordRequest(BaseModel):
     userEmail: str
     pin: str
+
+class BlockUserRequest(BaseModel):
+    block: bool
+
+class ChangeRoleRequest(BaseModel):
+    role: UserRole
