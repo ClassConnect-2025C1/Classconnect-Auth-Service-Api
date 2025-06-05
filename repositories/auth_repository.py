@@ -103,3 +103,6 @@ def unblock_user(db: Session, user: Credential):
     db.commit()
     db.refresh(user)
     return user
+
+def get_all_users(db: Session):
+    return db.query(Credential).all()
