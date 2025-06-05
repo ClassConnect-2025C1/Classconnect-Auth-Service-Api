@@ -103,6 +103,13 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
         user.lock_until = None
         db.commit()
 
+    if user.is_locked:
+        lock_until_arg = user.lock_until.strftime('%Y-%m-%d %H:%M:%S')
+        raise HTTPException(
+            status_code=401,
+            detail=f"Your account is locked until {lock_until_arg} (Argentina Time)."
+        )
+
 
     if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
         user.is_locked = True
@@ -285,4 +292,4 @@ def change_user_role(user_id: str, request: ChangeRoleRequest, db: Session = Dep
 
 @router.get("", status_code=200)
 def get_users(db: Session = Depends(get_db)):
-    return get_user_info(db)
+    return get_user_info(db)    
