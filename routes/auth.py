@@ -14,7 +14,7 @@ from models.credential_models import Credential
 from utils.security import decode_token
 from utils.security import hash_password, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordBearer
-from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password, verify_recovery_user_pin, block_user_service, change_user_role_service
+from services.auth_services import verify_pin, notify_user, send_recovery_link, change_password, verify_recovery_user_pin, block_user_service, change_user_role_service, get_user_info
 from dbConfig.session import get_db
 import httpx
 import firebase_admin
@@ -282,3 +282,7 @@ def block_user(user_id: str, request: BlockUserRequest,db: Session = Depends(get
 def change_user_role(user_id: str, request: ChangeRoleRequest, db: Session = Depends(get_db)):
     change_user_role_service(db, user_id, request.role)
     return {"message": f"User {user_id} role changed to {request.role} successfully"}
+
+@router.get("", status_code=200)
+def get_users(db: Session = Depends(get_db)):
+    return get_user_info(db)
