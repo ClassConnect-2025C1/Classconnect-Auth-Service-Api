@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from enum import Enum
 from datetime import datetime
+from uuid import UUID
 
 
 
@@ -66,3 +67,7 @@ class BlockUserRequest(BaseModel):
 
 class ChangeRoleRequest(BaseModel):
     role: UserRole
+
+class UserBasicInfo(BaseModel):
+    id: UUID
+    is_locked: bool
