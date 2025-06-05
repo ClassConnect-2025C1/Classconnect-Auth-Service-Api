@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse
+from schemas.auth_schemas import UserRegister, UserLogin, TokenResponse, UserBasicInfo
 from repositories.auth_repository import get_user_by_email, create_user, verify_user, update_user_password, increase_incorrect_attempts, get_user_by_id, block_user, unblock_user
-from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin, pin_can_change
+from repositories.auth_repository import get_verification_pin, delete_verification_pin, set_pin_invalid, create_verification_pin, set_new_pin, pin_can_change, get_all_users
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
@@ -128,6 +128,19 @@ def change_user_role_service(db: Session, user_id: str, new_role: str):
     update_user_data(user_id, user_data)
     
     return {"message": f"User {user_id} role changed to {new_role} successfully"}
+
+
+def get_user_info(db:Session):
+    profiles = get_all_users(db)
+    if not profiles:
+        raise HTTPException(status_code=404, detail="No user profiles found")
+    return [
+        UserBasicInfo(
+            id=u.id,
+            is_locked=u.is_locked,
+        )
+        for u in profiles
+    ]
 
 ########### UTILS ###########
 
