@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from routes.auth import router as auth_router
 from dbConfig.base import Base
 from dbConfig.session import engine
+from middleware.datadog_logger import setup_datadog_logging
+import os
+from dotenv import load_dotenv
 
 Base.metadata.create_all(bind=engine)
 
@@ -16,6 +19,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Setup Datadog logging
+load_dotenv()
+datadog_api_key = os.getenv("DATADOG_API_KEY")
+dd_logger = setup_datadog_logging(app, datadog_api_key)
 
 app.include_router(auth_router)
 
