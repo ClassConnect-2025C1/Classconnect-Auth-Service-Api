@@ -59,3 +59,22 @@ def send_email_recovery(to_email: str, body: str):
 
     except requests.RequestException as e:
         raise HTTPException(status_code=503, detail=f"Notification service unavailable: {str(e)}")
+    
+def create_notification_preferences(id: str, email: str):
+    NOTIFICATION_SERVICE_URL = prefix + "/notifications/preferences/" + id
+    payload = {
+        "email": email
+    }
+    print(f"Creating notification preferences for user {id} with channel {email}")
+    try:
+        response = requests.post(NOTIFICATION_SERVICE_URL, json=payload)
+        print(f"Notification service response: {response.status_code}, {response.text}")
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Notification preferences not found")
+        elif response.status_code == 400:
+            raise HTTPException(status_code=400, detail="One or more fields are missing or invalid")
+
+    except requests.RequestException as e:
+        raise HTTPException(status_code=503, detail=f"Notification service unavailable: {str(e)}")

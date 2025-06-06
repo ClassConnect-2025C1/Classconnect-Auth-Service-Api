@@ -6,7 +6,7 @@ from repositories.auth_repository import get_verification_pin, delete_verificati
 from utils.security import hash_password, verify_password, create_access_token
 from datetime import datetime, timedelta, timezone
 import random
-from externals.notify_service import send_notification, send_email_recovery
+from externals.notify_service import send_notification, send_email_recovery, create_notification_preferences
 from externals.user_service import get_user_data, update_user_data
 import uuid
 
@@ -45,6 +45,8 @@ def verify_pin(db: Session, user_email: str, pin: str):
     
     delete_verification_pin(db, verification_pin)
     make_user_verified(db, user_email)
+    user = get_user_by_email(db, user_email)
+    create_notification_preferences(str(user.id), user_email)
     return True
 
 
