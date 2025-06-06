@@ -95,6 +95,7 @@ def test_succes_verification_return_true():
         patch("services.auth_services.assert_pin_not_expired"), \
         patch("services.auth_services.assert_pin_is_valid"), \
         patch("services.auth_services.assert_pin_not_for_recovery"), \
+        patch("services.auth_services.create_notification_preferences", return_value=None), \
         patch("services.auth_services.make_user_verified") as mock_verify_user:
         # Simulate the behavior of get_verification_pin to return None
         result = verify_pin(mock_db, user_email, correct_pin)
@@ -166,6 +167,7 @@ def test_success_verification_delete_pin_from_db():
         patch("services.auth_services.assert_pin_is_valid"), \
         patch("services.auth_services.assert_pin_not_for_recovery"), \
         patch("services.auth_services.delete_verification_pin"), \
+        patch("services.auth_services.create_notification_preferences", return_value=None), \
         patch("services.auth_services.make_user_verified") as mock_verify_user:
         
         verify_pin(mock_db, user_email, correct_pin)
