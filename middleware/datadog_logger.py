@@ -46,7 +46,7 @@ class DatadogLogger:
         self,
         api_key: str,
         source: str = "python",
-        service: str = "classconnect-resources-api",
+        service: str = "classconnect-auth-api",
         hostname: Optional[str] = None,
         site: Optional[str] = None
     ):
