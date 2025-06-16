@@ -196,7 +196,7 @@ def login_with_google(data: dict, db: Session = Depends(get_db)):
 
             # Si el usuario no existe, lo creamos
             user_id = uuid.uuid4()
-            user = Credential(id=user_id, email=email, hashed_password=None)
+            user = Credential(id=user_id, email=email, hashed_password=None, is_verified=True,)
             db.add(user)
             db.commit()
             db.refresh(user)
