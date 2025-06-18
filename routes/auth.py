@@ -295,7 +295,7 @@ def get_users(db: Session = Depends(get_db)):
     return get_user_info(db)    
 
  
-@router.get("/check-password")
+@router.get("/check-password/{user_email}")
 def check_password(email: str, db: Session = Depends(get_db)):
     user = db.query(Credential).filter(Credential.email == email).first()
 
@@ -305,4 +305,5 @@ def check_password(email: str, db: Session = Depends(get_db)):
     has_password = bool(user.hashed_password and user.hashed_password.strip() != "")
 
     return {"has_password": has_password}
+
 
