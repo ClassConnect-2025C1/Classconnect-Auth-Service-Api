@@ -293,3 +293,16 @@ def change_user_role(user_id: str, request: ChangeRoleRequest, db: Session = Dep
 @router.get("", status_code=200)
 def get_users(db: Session = Depends(get_db)):
     return get_user_info(db)    
+
+ 
+@router.get("/check-password")
+def check_password(email: str, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == email).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    has_password = bool(user.hashed_password and user.hashed_password.strip() != "")
+
+    return {"has_password": has_password}
+
