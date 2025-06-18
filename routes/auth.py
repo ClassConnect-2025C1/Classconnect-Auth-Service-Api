@@ -296,8 +296,8 @@ def get_users(db: Session = Depends(get_db)):
 
  
 @router.get("/check-password/{user_email}")
-def check_password(email: str, db: Session = Depends(get_db)):
-    user = db.query(Credential).filter(Credential.email == email).first()
+def check_password(user_email: str, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == user_email).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -305,5 +305,4 @@ def check_password(email: str, db: Session = Depends(get_db)):
     has_password = bool(user.hashed_password and user.hashed_password.strip() != "")
 
     return {"has_password": has_password}
-
 
