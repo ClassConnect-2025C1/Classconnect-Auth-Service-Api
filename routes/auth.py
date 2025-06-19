@@ -281,7 +281,7 @@ def change_user_password(request: ChangePasswordRequest, db: Session = Depends(g
     return {"message": "Password changed successfully"}
 
 
-@router.put("/has-password/{user_email}")
+@router.put("/set-password")
 def set_password(request: ChangePasswordRequest, db: Session = Depends(get_db)):
     user = db.query(Credential).filter(Credential.email == request.userEmail).first()
     if not user:
@@ -312,7 +312,7 @@ def get_users(db: Session = Depends(get_db)):
     return get_user_info(db)    
 
  
-@router.get("/check-password/{user_email}")
+@router.get("/has-password/{user_email}")
 def check_password(user_email: str, db: Session = Depends(get_db)):
     user = db.query(Credential).filter(Credential.email == user_email).first()
 
