@@ -79,8 +79,8 @@ def send_recovery_link(db: Session, user_email: str):
 
 def change_password(db: Session, user_email: str, new_password: str):
     recovery_link = get_verification_pin(db, user_email)
-    if not recovery_link:
-        raise HTTPException(status_code=404, detail="Verification pin not found")
+    #if not recovery_link:
+        #raise HTTPException(status_code=404, detail="Verification pin not found")
     
     assert_pin_for_recovery(db, user_email, recovery_link)
     assert_pin_is_valid(recovery_link)
