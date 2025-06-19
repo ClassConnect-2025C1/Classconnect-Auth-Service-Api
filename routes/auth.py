@@ -280,6 +280,23 @@ def change_user_password(request: ChangePasswordRequest, db: Session = Depends(g
     change_password(db, request.userEmail, request.new_password)
     return {"message": "Password changed successfully"}
 
+
+@router.put("/set-password")
+def set_password(request: ChangePasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(Credential).filter(Credential.email == request.userEmail).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.hashed_password:
+        raise HTTPException(status_code=400, detail="Password already set")
+
+    user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "Password set successfully"}
+
+
 @router.patch("/block/{user_id}")
 def block_user(user_id: str, request: BlockUserRequest,db: Session = Depends(get_db)):
     block_user_service(db, user_id, request.block)
