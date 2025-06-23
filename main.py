@@ -10,6 +10,11 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+import yaml
+with open("openapi.yaml", "r") as f:
+    custom_openapi = yaml.safe_load(f)
+app.openapi = lambda: custom_openapi
+
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(

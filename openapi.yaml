@@ -1,0 +1,397 @@
+openapi: 3.0.0
+info:
+  title: ClassConnect Auth Service API
+  version: 1.0.0
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+      responses:
+        '200':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Profile creation or internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials or account locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/google:
+    post:
+      summary: Login or register with Google
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [google_token]
+              properties:
+                google_token:
+                  type: string
+                role:
+                  type: string
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Google login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Incomplete Google token data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Token verification or user creation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/protected:
+    get:
+      summary: Protected route
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Access granted
+        '401':
+          description: Unauthorized or account locked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verification:
+    post:
+      summary: Verify user with PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PinRequest'
+      responses:
+        '200':
+          description: User verified
+
+  /auth/notification:
+    post:
+      summary: Send verification notification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationRequest'
+      responses:
+        '200':
+          description: Notification sent
+
+  /auth/verification/resend:
+    post:
+      summary: Resend verification PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendRequest'
+      responses:
+        '200':
+          description: Verification code resent
+
+  /auth/recovery-password:
+    post:
+      summary: Send password recovery link via PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryRequest'
+      responses:
+        '200':
+          description: Recovery link sent
+
+  /auth/recovery-password/verify-pin:
+    post:
+      summary: Verify recovery PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PinPasswordRequest'
+      responses:
+        '200':
+          description: PIN verified
+
+  /auth/recovery-password/change-password:
+    patch:
+      summary: Change password using recovery PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password changed
+
+  /auth/set-password:
+    put:
+      summary: Set password for account that doesn't have one
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password set successfully
+
+  /auth/block/{user_id}:
+    patch:
+      summary: Block or unblock a user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockUserRequest'
+      responses:
+        '200':
+          description: User block status updated
+
+  /auth/rol/{user_id}:
+    patch:
+      summary: Change a user's role
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRoleRequest'
+      responses:
+        '200':
+          description: Role changed
+
+  /auth:
+    get:
+      summary: Get basic info for all users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserBasicInfo'
+
+  /auth/has-password/{user_email}:
+    get:
+      summary: Check if a user has a password set
+      parameters:
+        - name: user_email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Whether user has a password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  has_password:
+                    type: boolean
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+
+    UserRegister:
+      type: object
+      required: [email, password, name, last_name, role, phone]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        name:
+          type: string
+        last_name:
+          type: string
+        role:
+          type: string
+          enum: [student, teacher]
+        phone:
+          type: string
+
+    UserLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    PinRequest:
+      type: object
+      required: [userId, pin]
+      properties:
+        userId:
+          type: string
+        pin:
+          type: string
+
+    NotificationRequest:
+      type: object
+      required: [email, to, channel]
+      properties:
+        email:
+          type: string
+        to:
+          type: string
+        channel:
+          type: string
+
+    ResendRequest:
+      type: object
+      required: [userId, phone]
+      properties:
+        userId:
+          type: string
+        phone:
+          type: string
+
+    RecoveryRequest:
+      type: object
+      required: [userEmail]
+      properties:
+        userEmail:
+          type: string
+
+    PinPasswordRequest:
+      type: object
+      required: [userEmail, pin]
+      properties:
+        userEmail:
+          type: string
+        pin:
+          type: string
+
+    ChangePasswordRequest:
+      type: object
+      required: [userEmail, new_password]
+      properties:
+        userEmail:
+          type: string
+        new_password:
+          type: string
+
+    BlockUserRequest:
+      type: object
+      required: [block]
+      properties:
+        block:
+          type: boolean
+
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [student, teacher]
+
+    UserBasicInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        is_locked:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
