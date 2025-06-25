@@ -38,3 +38,18 @@ Este proyecto sigue la arquitectura *package by layer*, donde cada carpeta agrup
 
 - **`utils/`**  
   Funciones auxiliares como encriptación, manejo de tokens u otras herramientas reutilizables.
+
+## 🛠️ Instalación y uso
+
+### Requisitos previos
+
+- Docker
+- Docker Compose
+
+### Ejecución local del proyecto
+
+Pararse en el root del proyecto y ejecutar el siguiente comando:
+
+```bash
+docker compose up --env-file .env.development up --build
+```
