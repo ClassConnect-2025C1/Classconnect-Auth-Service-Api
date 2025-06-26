@@ -90,16 +90,13 @@ def increase_incorrect_attempts(db: Session, user_email: str):
     return pin_entry
 
 def block_user(db: Session, user: Credential):
-    user.is_locked = True
-    user.lock_until = datetime.now(timezone.utc) + timedelta(weeks=260)  # 5 years
+    user.is_blocked = True
     db.commit()
     db.refresh(user)
     return user
 
 def unblock_user(db: Session, user: Credential):
-    user.is_locked = False
-    user.lock_until = None
-    user.failed_attempts = 0
+    user.is_blocked = False
     db.commit()
     db.refresh(user)
     return user

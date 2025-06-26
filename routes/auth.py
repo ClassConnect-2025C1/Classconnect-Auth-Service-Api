@@ -99,11 +99,10 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
         user.lock_until = None
         db.commit()
 
-    if user.is_locked:
-        lock_until_arg = user.lock_until.strftime('%Y-%m-%d %H:%M:%S')
+    if user.is_blocked:
         raise HTTPException(
-            status_code=401,
-            detail=f"Your account is locked until {lock_until_arg} (Argentina Time)."
+            status_code=403,
+            detail=f"Your account is blocked."
         )
 
     if user.failed_attempts >= MAX_FAILED_ATTEMPTS:
