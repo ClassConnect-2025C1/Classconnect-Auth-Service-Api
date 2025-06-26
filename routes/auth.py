@@ -156,65 +156,77 @@ def verify_google_token(google_token: str) -> dict:
             status_code=500, detail=f"Error al verificar el token: {str(e)}")
 
 
-@router.post("/google", response_model=TokenResponse)
-def login_with_google(data: dict, db: Session = Depends(get_db)):
+
+@router.post("/check-google-user")
+def check_google_user(data: dict, db: Session = Depends(get_db)):
     google_token = data.get("google_token")
     if not google_token:
         raise HTTPException(status_code=400, detail="Google token is required")
-
+    
+    google_info = verify_google_token(google_token)
+    email = google_info.get("email")
+    
+    # Verificar si el usuario ya existe
+    user = db.query(Credential).filter(Credential.email == email).first()
+    if user:
+        # Usuario existe, devolver token
+        token = create_access_token({"user_id": str(user.id), "user_email": user.email})
+        return {"access_token": token}
+    else:
+        # Usuario no existe
+        raise HTTPException(status_code=404, detail="User not found")
+    
+@router.post("/google", response_model=TokenResponse)
+def login_with_google(data: dict, db: Session = Depends(get_db)):
+    google_token = data.get("google_token")
+    role = data.get("role")  # ✅ Ahora viene del frontend
+    
+    if not google_token:
+        raise HTTPException(status_code=400, detail="Google token is required")
+    if not role or role not in ["teacher", "student"]:
+        raise HTTPException(status_code=400, detail="Valid role is required")
+    
     google_info = verify_google_token(google_token)
     
     email = google_info.get("email")
     name = google_info.get("name")
     picture = google_info.get("picture")
-
+    
     if not all([email, name]):
         raise HTTPException(status_code=400, detail="Incomplete Google data")
-
+    
     name_parts = name.split(" ")
     first_name = name_parts[0]
     last_name = " ".join(name_parts[1:])
-
-    role = data.get("role", "student")
-    phone = data.get("phone")
-
+    
     user = db.query(Credential).filter(Credential.email == email).first()
-
     if not user:
         try:
-
-            # Si el usuario no existe, lo creamos
+            # Si el usuario no existe, lo creamos con el rol seleccionado
             user_id = uuid.uuid4()
-            user = Credential(id=user_id, email=email, hashed_password=None, is_verified=True,)
+            user = Credential(id=user_id, email=email, hashed_password=None, is_verified=True)
             db.add(user)
             db.commit()
             db.refresh(user)
-
-            # Datos para crear el perfil
+            
+            # Crear perfil con el rol seleccionado
             profile_data = {
                 "id": str(user_id),
                 "email": email,
                 "name": first_name,          
                 "last_name": last_name,
-                "role": role,
-                "phone": phone,
+                "role": role,  # ✅ Usar el rol seleccionado
+                "phone": None,
                 "photo_url": picture            
             }
-
             response = httpx.post(f"{USERS_SERVICE_URL}/users/google_profile", json=profile_data)
-
             response.raise_for_status()
-
-        except httpx.HTTPStatusError as e:
-            db.rollback()  
-            raise HTTPException(
-                status_code=500, detail=f"Error creating profile: {str(e)}")
+            
         except Exception as e:
             db.rollback()
-            raise HTTPException(
-                status_code=500, detail=f"Unexpected error: {str(e)}")
-
-    # Paso 5: Generamos el token JWT y lo devolvemos
+            raise HTTPException(status_code=500, detail=f"Error creating user: {str(e)}")
+    
+    # Generar token
     token = create_access_token({"user_id": str(user.id), "user_email": user.email})
     return {"access_token": token}
 
