@@ -17,6 +17,8 @@ services:
     build: .
     container_name: auth-service
     env_file: .env.development
+    environment:
+      DB_HOST: auth-postgres
     ports:
       - "8001:8001"
     volumes:
@@ -27,3 +29,4 @@ services:
 
 volumes:
   pgdata:
+
