@@ -51,5 +51,5 @@ Este proyecto sigue la arquitectura *package by layer*, donde cada carpeta agrup
 Pararse en el root del proyecto y ejecutar el siguiente comando:
 
 ```bash
-docker compose up --env-file .env.development up --build
+docker compose --env-file .env.development up --build
 ```
