@@ -53,3 +53,8 @@ Pararse en el root del proyecto y ejecutar el siguiente comando:
 ```bash
 docker compose --env-file .env.development up --build
 ```
+
+## 📚 Documentación de la API
+
+ - Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
+ - Production: [Auth docs](https://classconnect-auth-service-api-nohi.onrender.com/docs)
