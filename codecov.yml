@@ -11,3 +11,8 @@ comment:
   layout: "reach, diff, flags, files"
   behavior: default
   require_changes: false
+
+ignore:
+  - README.md
+  - docker-compose.yml
+  - .env*
